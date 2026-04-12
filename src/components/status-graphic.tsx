@@ -118,8 +118,8 @@ export function StatusGraphic({ weights, nutritionDates = [], todayProtein = nul
 
   const segRange = segStart - segEnd;
   const segProgress = segRange > 0
-    ? Math.min(((segStart - latest.weightLbs) / segRange) * 100, 100)
-    : 0;
+    ? Math.max(1, Math.min(((segStart - latest.weightLbs) / segRange) * 100, 100))
+    : 1;
 
   const radius = 120;
   const cx = 150;
