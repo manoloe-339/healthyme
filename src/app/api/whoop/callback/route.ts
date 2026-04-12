@@ -11,13 +11,6 @@ export async function GET(request: NextRequest) {
   }
 
   const cookieStore = await cookies();
-  const savedState = cookieStore.get("whoop_oauth_state")?.value;
-
-  if (!state || state !== savedState) {
-    return NextResponse.json({ error: "Invalid state" }, { status: 400 });
-  }
-
-  cookieStore.delete("whoop_oauth_state");
 
   const tokens = await exchangeWhoopCode(code);
 
