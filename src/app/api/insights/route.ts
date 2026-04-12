@@ -1,23 +1,17 @@
 import { NextResponse } from "next/server";
 import { getDb } from "@/db";
-import { whoopRecovery, weightLog, dailyInsight } from "@/db/schema";
+import { whoopRecovery, weightLog, dailyInsight, dailyNutrition, dailyActivity } from "@/db/schema";
 import { desc, sql } from "drizzle-orm";
 import { generateDailyInsight } from "@/lib/insights";
 
 export async function POST() {
   const db = getDb();
 
-  const [recentRecovery, recentWeight] = await Promise.all([
-    db
-      .select()
-      .from(whoopRecovery)
-      .orderBy(desc(whoopRecovery.date))
-      .limit(5),
-    db
-      .select()
-      .from(weightLog)
-      .orderBy(desc(weightLog.date))
-      .limit(5),
+  const [recentRecovery, recentWeight, recentNutrition, recentActivity] = await Promise.all([
+    db.select().from(whoopRecovery).orderBy(desc(whoopRecovery.date)).limit(5),
+    db.select().from(weightLog).orderBy(desc(weightLog.date)).limit(5),
+    db.select().from(dailyNutrition).orderBy(desc(dailyNutrition.date)).limit(5),
+    db.select().from(dailyActivity).orderBy(desc(dailyActivity.date)).limit(5),
   ]);
 
   if (recentRecovery.length === 0) {
@@ -35,12 +29,31 @@ export async function POST() {
       recoveryScore: r.recoveryScore,
       hrvRmssd: r.hrvRmssd,
       sleepPerformance: r.sleepPerformance,
+      sleepDurationMs: r.sleepDurationMs,
       strain: r.strain,
     })),
     weightData: recentWeight.map((w) => ({
       date: w.date,
       weightKg: w.weightKg,
+      bodyFatPct: w.bodyFatPct,
+      leanBodyMassKg: w.leanBodyMassKg,
     })),
+    nutritionData: recentNutrition.length > 0
+      ? recentNutrition.map((n) => ({
+          date: n.date,
+          calories: n.calories,
+          protein: n.protein,
+          carbs: n.carbs,
+          totalFat: n.totalFat,
+        }))
+      : undefined,
+    activityData: recentActivity.length > 0
+      ? recentActivity.map((a) => ({
+          date: a.date,
+          steps: a.steps,
+          activeEnergy: a.activeEnergy,
+        }))
+      : undefined,
     todayRecovery,
   });
 

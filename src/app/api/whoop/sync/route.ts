@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { fetchRecovery, fetchCycles, refreshWhoopToken } from "@/lib/whoop";
+import { fetchRecovery, fetchCycles, fetchSleep, refreshWhoopToken } from "@/lib/whoop";
 import { getDb } from "@/db";
 import { whoopRecovery } from "@/db/schema";
 import { sql } from "drizzle-orm";
@@ -40,10 +40,29 @@ export async function POST(request: NextRequest) {
   const startDate = fiveDaysAgo.toISOString().split("T")[0];
   const endDate = now.toISOString().split("T")[0];
 
-  const [recoveries, cycles] = await Promise.all([
+  const [recoveries, cycles, sleeps] = await Promise.all([
     fetchRecovery(accessToken, startDate, endDate),
     fetchCycles(accessToken, startDate, endDate),
+    fetchSleep(accessToken, startDate, endDate),
   ]);
+
+  // Index sleep by date (use the end time as the "night of" date)
+  const sleepByDate = new Map(
+    sleeps
+      .filter((s) => s.score_state === "SCORED")
+      .map((s) => {
+        const date = s.end.split("T")[0];
+        const totalSleep =
+          s.score.total_sleep_duration_milli ??
+          (s.score.total_light_sleep_time_milli ?? 0) +
+          (s.score.total_slow_wave_sleep_time_milli ?? 0) +
+          (s.score.total_rem_sleep_time_milli ?? 0);
+        return [date, {
+          performance: s.score.sleep_performance_percentage,
+          durationMs: totalSleep,
+        }];
+      })
+  );
 
   const db = getDb();
 
@@ -52,6 +71,7 @@ export async function POST(request: NextRequest) {
     const cycleForDate = cycles.find(
       (c) => c.created_at.split("T")[0] === date
     );
+    const sleep = sleepByDate.get(date);
 
     await db
       .insert(whoopRecovery)
@@ -60,8 +80,8 @@ export async function POST(request: NextRequest) {
         recoveryScore: rec.score.recovery_score,
         hrvRmssd: rec.score.hrv_rmssd_milli,
         restingHeartRate: rec.score.resting_heart_rate,
-        sleepPerformance: rec.sleep?.score?.sleep_performance_percentage ?? null,
-        sleepDurationMs: rec.sleep?.score?.total_sleep_duration_milli ?? null,
+        sleepPerformance: sleep?.performance ?? null,
+        sleepDurationMs: sleep?.durationMs ?? null,
         strain: cycleForDate?.score?.strain ?? null,
       })
       .onConflictDoUpdate({
@@ -77,5 +97,8 @@ export async function POST(request: NextRequest) {
       });
   }
 
-  return NextResponse.json({ synced: recoveries.length });
+  return NextResponse.json({
+    synced: recoveries.length,
+    sleepRecords: sleeps.length,
+  });
 }

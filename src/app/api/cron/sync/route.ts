@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { whoopRecovery } from "@/db/schema";
-import { fetchRecovery, fetchCycles, refreshWhoopToken } from "@/lib/whoop";
+import { fetchRecovery, fetchCycles, fetchSleep, refreshWhoopToken } from "@/lib/whoop";
 import { sql } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
-  // Verify cron secret to prevent unauthorized access
   const authHeader = request.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -28,10 +27,28 @@ export async function GET(request: NextRequest) {
   const startDate = fiveDaysAgo.toISOString().split("T")[0];
   const endDate = now.toISOString().split("T")[0];
 
-  const [recoveries, cycles] = await Promise.all([
+  const [recoveries, cycles, sleeps] = await Promise.all([
     fetchRecovery(tokens.access_token, startDate, endDate),
     fetchCycles(tokens.access_token, startDate, endDate),
+    fetchSleep(tokens.access_token, startDate, endDate),
   ]);
+
+  const sleepByDate = new Map(
+    sleeps
+      .filter((s) => s.score_state === "SCORED")
+      .map((s) => {
+        const date = s.end.split("T")[0];
+        const totalSleep =
+          s.score.total_sleep_duration_milli ??
+          (s.score.total_light_sleep_time_milli ?? 0) +
+          (s.score.total_slow_wave_sleep_time_milli ?? 0) +
+          (s.score.total_rem_sleep_time_milli ?? 0);
+        return [date, {
+          performance: s.score.sleep_performance_percentage,
+          durationMs: totalSleep,
+        }];
+      })
+  );
 
   const db = getDb();
 
@@ -40,6 +57,7 @@ export async function GET(request: NextRequest) {
     const cycleForDate = cycles.find(
       (c) => c.created_at.split("T")[0] === date
     );
+    const sleep = sleepByDate.get(date);
 
     await db
       .insert(whoopRecovery)
@@ -48,8 +66,8 @@ export async function GET(request: NextRequest) {
         recoveryScore: rec.score.recovery_score,
         hrvRmssd: rec.score.hrv_rmssd_milli,
         restingHeartRate: rec.score.resting_heart_rate,
-        sleepPerformance: rec.sleep?.score?.sleep_performance_percentage ?? null,
-        sleepDurationMs: rec.sleep?.score?.total_sleep_duration_milli ?? null,
+        sleepPerformance: sleep?.performance ?? null,
+        sleepDurationMs: sleep?.durationMs ?? null,
         strain: cycleForDate?.score?.strain ?? null,
       })
       .onConflictDoUpdate({
@@ -67,6 +85,7 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     synced: recoveries.length,
+    sleepRecords: sleeps.length,
     newRefreshToken: tokens.refresh_token,
   });
 }

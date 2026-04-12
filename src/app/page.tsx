@@ -21,6 +21,7 @@ interface RecoveryEntry {
   recoveryScore: number;
   hrvRmssd: number | null;
   sleepPerformance: number | null;
+  sleepDurationMs: number | null;
   strain: number | null;
   restingHeartRate: number | null;
 }
@@ -533,6 +534,7 @@ export default function Dashboard() {
                     <th className="text-left py-2 pr-3 font-medium">Date</th>
                     <th className="text-right py-2 px-3 font-medium">Rec</th>
                     <th className="text-right py-2 px-3 font-medium">Sleep</th>
+                    <th className="text-right py-2 px-3 font-medium">Hrs</th>
                     <th className="text-right py-2 px-3 font-medium">HRV</th>
                     <th className="text-right py-2 px-3 font-medium">Strain</th>
                     <th className="text-right py-2 pl-3 font-medium">Weight</th>
@@ -552,6 +554,11 @@ export default function Dashboard() {
                         <td className="text-right py-2 px-3">
                           {r.sleepPerformance
                             ? `${r.sleepPerformance.toFixed(0)}%`
+                            : "—"}
+                        </td>
+                        <td className="text-right py-2 px-3">
+                          {r.sleepDurationMs
+                            ? `${(r.sleepDurationMs / 3600000).toFixed(1)}h`
                             : "—"}
                         </td>
                         <td className="text-right py-2 px-3">

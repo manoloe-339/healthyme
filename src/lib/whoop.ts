@@ -7,18 +7,35 @@ export interface WhoopTokens {
 }
 
 export interface WhoopRecoveryData {
+  cycle_id: number;
+  sleep_id: string;
+  score_state: string;
   score: {
     recovery_score: number;
     resting_heart_rate: number;
     hrv_rmssd_milli: number;
+    spo2_percentage?: number;
+    skin_temp_celsius?: number;
   };
-  sleep: {
-    id: number;
-    score: {
-      sleep_performance_percentage: number;
-      total_sleep_duration_milli: number;
-    };
+  created_at: string;
+}
+
+export interface WhoopSleepData {
+  id: string;
+  score_state: string;
+  score: {
+    sleep_performance_percentage: number;
+    sleep_consistency_percentage: number;
+    sleep_efficiency_percentage: number;
+    total_in_bed_time_milli: number;
+    total_awake_time_milli: number;
+    total_light_sleep_time_milli: number;
+    total_slow_wave_sleep_time_milli: number;
+    total_rem_sleep_time_milli: number;
+    total_sleep_duration_milli?: number;
   };
+  start: string;
+  end: string;
   created_at: string;
 }
 
@@ -117,6 +134,24 @@ export async function fetchRecovery(
     { headers: { Authorization: `Bearer ${accessToken}` } }
   );
   if (!res.ok) throw new Error(`WHOOP recovery fetch failed: ${res.status}`);
+  const data = await res.json();
+  return data.records ?? [];
+}
+
+export async function fetchSleep(
+  accessToken: string,
+  startDate: string,
+  endDate: string
+): Promise<WhoopSleepData[]> {
+  const params = new URLSearchParams({
+    start: `${startDate}T00:00:00.000Z`,
+    end: `${endDate}T23:59:59.999Z`,
+  });
+  const res = await fetch(
+    `${WHOOP_API_BASE}/activity/sleep?${params}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+  if (!res.ok) throw new Error(`WHOOP sleep fetch failed: ${res.status}`);
   const data = await res.json();
   return data.records ?? [];
 }
