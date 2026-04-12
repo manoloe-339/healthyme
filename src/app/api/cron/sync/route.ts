@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
-import { whoopRecovery } from "@/db/schema";
+import { whoopRecovery, whoopTokens } from "@/db/schema";
 import { fetchRecovery, fetchCycles, fetchSleep, refreshWhoopToken } from "@/lib/whoop";
-import { sql } from "drizzle-orm";
+import { sql, desc } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
@@ -10,15 +10,40 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const refreshToken = process.env.WHOOP_REFRESH_TOKEN;
-  if (!refreshToken) {
-    return NextResponse.json(
-      { error: "No refresh token configured" },
-      { status: 400 }
-    );
+  const db = getDb();
+
+  // Get tokens from DB
+  const stored = await db.select().from(whoopTokens).orderBy(desc(whoopTokens.updatedAt)).limit(1);
+  if (stored.length === 0) {
+    return NextResponse.json({ error: "No WHOOP tokens. Auth via dashboard first." }, { status: 400 });
   }
 
-  const tokens = await refreshWhoopToken(refreshToken);
+  let accessToken: string;
+  const t = stored[0];
+
+  if (t.expiresAt > new Date()) {
+    accessToken = t.accessToken;
+  } else {
+    const tokens = await refreshWhoopToken(t.refreshToken);
+    accessToken = tokens.access_token;
+    await db
+      .insert(whoopTokens)
+      .values({
+        id: 1,
+        accessToken: tokens.access_token,
+        refreshToken: tokens.refresh_token,
+        expiresAt: new Date(tokens.expires_at),
+      })
+      .onConflictDoUpdate({
+        target: whoopTokens.id,
+        set: {
+          accessToken: sql`excluded.access_token`,
+          refreshToken: sql`excluded.refresh_token`,
+          expiresAt: sql`excluded.expires_at`,
+          updatedAt: sql`now()`,
+        },
+      });
+  }
 
   const now = new Date();
   const fiveDaysAgo = new Date(now);
@@ -28,9 +53,9 @@ export async function GET(request: NextRequest) {
   const endDate = now.toISOString().split("T")[0];
 
   const [recoveries, cycles, sleeps] = await Promise.all([
-    fetchRecovery(tokens.access_token, startDate, endDate),
-    fetchCycles(tokens.access_token, startDate, endDate),
-    fetchSleep(tokens.access_token, startDate, endDate),
+    fetchRecovery(accessToken, startDate, endDate),
+    fetchCycles(accessToken, startDate, endDate),
+    fetchSleep(accessToken, startDate, endDate),
   ]);
 
   const sleepByDate = new Map(
@@ -38,19 +63,18 @@ export async function GET(request: NextRequest) {
       .filter((s) => s.score_state === "SCORED")
       .map((s) => {
         const date = s.end.split("T")[0];
-        const totalSleep =
-          s.score.total_sleep_duration_milli ??
-          (s.score.total_light_sleep_time_milli ?? 0) +
-          (s.score.total_slow_wave_sleep_time_milli ?? 0) +
-          (s.score.total_rem_sleep_time_milli ?? 0);
+        const ss = (s.score as Record<string, unknown>).stage_summary as Record<string, number> | undefined;
+        const totalSleep = ss
+          ? (ss.total_light_sleep_time_milli ?? 0) +
+            (ss.total_slow_wave_sleep_time_milli ?? 0) +
+            (ss.total_rem_sleep_time_milli ?? 0)
+          : 0;
         return [date, {
-          performance: s.score.sleep_performance_percentage,
+          performance: (s.score as Record<string, unknown>).sleep_performance_percentage as number,
           durationMs: totalSleep,
         }];
       })
   );
-
-  const db = getDb();
 
   for (const rec of recoveries) {
     const date = rec.created_at.split("T")[0];
@@ -79,6 +103,7 @@ export async function GET(request: NextRequest) {
           sleepPerformance: sql`excluded.sleep_performance`,
           sleepDurationMs: sql`excluded.sleep_duration_ms`,
           strain: sql`excluded.strain`,
+          createdAt: sql`now()`,
         },
       });
   }
@@ -86,6 +111,5 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     synced: recoveries.length,
     sleepRecords: sleeps.length,
-    newRefreshToken: tokens.refresh_token,
   });
 }

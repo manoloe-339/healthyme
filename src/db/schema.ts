@@ -53,6 +53,14 @@ export const dailyActivity = pgTable("daily_activity", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const whoopTokens = pgTable("whoop_tokens", {
+  id: serial("id").primaryKey(),
+  accessToken: text("access_token").notNull(),
+  refreshToken: text("refresh_token").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const dailyInsight = pgTable("daily_insight", {
   id: serial("id").primaryKey(),
   date: date("date").notNull().unique(),

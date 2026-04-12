@@ -2,8 +2,29 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { fetchRecovery, fetchCycles, fetchSleep, refreshWhoopToken } from "@/lib/whoop";
 import { getDb } from "@/db";
-import { whoopRecovery } from "@/db/schema";
-import { sql } from "drizzle-orm";
+import { whoopRecovery, whoopTokens } from "@/db/schema";
+import { sql, desc } from "drizzle-orm";
+
+async function saveTokensToDb(tokens: { access_token: string; refresh_token: string; expires_at: number }) {
+  const db = getDb();
+  await db
+    .insert(whoopTokens)
+    .values({
+      id: 1,
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token,
+      expiresAt: new Date(tokens.expires_at),
+    })
+    .onConflictDoUpdate({
+      target: whoopTokens.id,
+      set: {
+        accessToken: sql`excluded.access_token`,
+        refreshToken: sql`excluded.refresh_token`,
+        expiresAt: sql`excluded.expires_at`,
+        updatedAt: sql`now()`,
+      },
+    });
+}
 
 export async function POST(request: NextRequest) {
   const cookieStore = await cookies();
@@ -13,6 +34,7 @@ export async function POST(request: NextRequest) {
   if (!accessToken && refreshToken) {
     const tokens = await refreshWhoopToken(refreshToken);
     accessToken = tokens.access_token;
+    await saveTokensToDb(tokens);
     cookieStore.set("whoop_access_token", tokens.access_token, {
       httpOnly: true,
       secure: true,
@@ -27,6 +49,22 @@ export async function POST(request: NextRequest) {
       maxAge: 60 * 60 * 24 * 30,
       path: "/",
     });
+  }
+
+  // If no cookie tokens, try DB tokens
+  if (!accessToken) {
+    const db = getDb();
+    const stored = await db.select().from(whoopTokens).orderBy(desc(whoopTokens.updatedAt)).limit(1);
+    if (stored.length > 0) {
+      const t = stored[0];
+      if (t.expiresAt > new Date()) {
+        accessToken = t.accessToken;
+      } else {
+        const tokens = await refreshWhoopToken(t.refreshToken);
+        accessToken = tokens.access_token;
+        await saveTokensToDb(tokens);
+      }
+    }
   }
 
   if (!accessToken) {
@@ -46,14 +84,7 @@ export async function POST(request: NextRequest) {
     fetchSleep(accessToken, startDate, endDate),
   ]);
 
-  // Log raw sleep data for debugging
-  console.log(`Sleep records: ${sleeps.length}`);
-  if (sleeps.length > 0) {
-    console.log(`SLEEP_SCORE_KEYS: ${Object.keys(sleeps[0].score ?? {})}`);
-    console.log(`SLEEP_FIRST: ${JSON.stringify(sleeps[0]).substring(0, 500)}`);
-  }
-
-  // Index sleep by date (use the end time as the "night of" date)
+  // Index sleep by date
   const sleepByDate = new Map(
     sleeps
       .filter((s) => s.score_state === "SCORED")
@@ -66,7 +97,7 @@ export async function POST(request: NextRequest) {
             (ss.total_rem_sleep_time_milli ?? 0)
           : 0;
         return [date, {
-          performance: s.score.sleep_performance_percentage,
+          performance: (s.score as Record<string, unknown>).sleep_performance_percentage as number,
           durationMs: totalSleep,
         }];
       })
@@ -74,16 +105,12 @@ export async function POST(request: NextRequest) {
 
   const db = getDb();
 
-  console.log("Sleep dates indexed:", Array.from(sleepByDate.keys()));
-  console.log("Recovery dates:", recoveries.map((r) => r.created_at.split("T")[0]));
-
   for (const rec of recoveries) {
     const date = rec.created_at.split("T")[0];
     const cycleForDate = cycles.find(
       (c) => c.created_at.split("T")[0] === date
     );
     const sleep = sleepByDate.get(date);
-    console.log(`Date ${date}: sleep match=${!!sleep}, durationMs=${sleep?.durationMs}`);
 
     await db
       .insert(whoopRecovery)
