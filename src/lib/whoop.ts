@@ -1,4 +1,4 @@
-const WHOOP_API_BASE = "https://api.prod.whoop.com/developer/v1";
+const WHOOP_API_BASE = "https://api.prod.whoop.com/developer/v2";
 
 export interface WhoopTokens {
   access_token: string;
@@ -30,13 +30,15 @@ export interface WhoopCycleData {
 }
 
 export function getWhoopAuthUrl() {
+  const state = crypto.randomUUID();
   const params = new URLSearchParams({
     client_id: process.env.WHOOP_CLIENT_ID!,
     redirect_uri: process.env.WHOOP_REDIRECT_URI!,
     response_type: "code",
-    scope: "read:recovery read:sleep read:workout read:cycles read:profile",
+    scope: "read:recovery read:sleep read:workout read:cycles read:profile offline",
+    state,
   });
-  return `https://api.prod.whoop.com/oauth/oauth2/auth?${params}`;
+  return { url: `https://api.prod.whoop.com/oauth/oauth2/auth?${params}`, state };
 }
 
 export async function exchangeWhoopCode(code: string): Promise<WhoopTokens> {

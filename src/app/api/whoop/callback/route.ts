@@ -4,13 +4,23 @@ import { cookies } from "next/headers";
 
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
+  const state = request.nextUrl.searchParams.get("state");
+
   if (!code) {
     return NextResponse.json({ error: "Missing code" }, { status: 400 });
   }
 
+  const cookieStore = await cookies();
+  const savedState = cookieStore.get("whoop_oauth_state")?.value;
+
+  if (!state || state !== savedState) {
+    return NextResponse.json({ error: "Invalid state" }, { status: 400 });
+  }
+
+  cookieStore.delete("whoop_oauth_state");
+
   const tokens = await exchangeWhoopCode(code);
 
-  const cookieStore = await cookies();
   cookieStore.set("whoop_access_token", tokens.access_token, {
     httpOnly: true,
     secure: true,
