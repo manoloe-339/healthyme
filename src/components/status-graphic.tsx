@@ -57,10 +57,11 @@ function Confetti() {
   );
 }
 
-function MilestoneGauge({ pctComplete, currentWeight, nextMilestone }: {
+function MilestoneGauge({ pctComplete, currentWeight, nextMilestone, paceStatus }: {
   pctComplete: number;
   currentWeight: number;
   nextMilestone: { weight: number; label: string };
+  paceStatus: "green" | "yellow" | "red";
 }) {
   const [animatedPct, setAnimatedPct] = useState(0);
 
@@ -69,11 +70,13 @@ function MilestoneGauge({ pctComplete, currentWeight, nextMilestone }: {
     return () => clearTimeout(timer);
   }, [pctComplete]);
 
-  const radius = 70;
-  const cx = 80;
-  const cy = 80;
+  const radius = 80;
+  const cx = 90;
+  const cy = 85;
   const circumference = Math.PI * radius;
   const strokeOffset = circumference - (animatedPct / 100) * circumference;
+
+  const arcColor = paceStatus === "green" ? "#4ade80" : paceStatus === "yellow" ? "#facc15" : "#ef4444";
 
   const totalRange = BASELINE.startWeight - BASELINE.goalWeight;
   const milestoneAngles = MILESTONES.map((m) => {
@@ -83,7 +86,7 @@ function MilestoneGauge({ pctComplete, currentWeight, nextMilestone }: {
 
   return (
     <div className="flex flex-col items-center">
-      <svg width="160" height="90" viewBox="0 0 160 90">
+      <svg width="180" height="95" viewBox="0 0 180 95">
         <path
           d={`M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}`}
           fill="none"
@@ -94,7 +97,7 @@ function MilestoneGauge({ pctComplete, currentWeight, nextMilestone }: {
         <path
           d={`M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}`}
           fill="none"
-          stroke={pctComplete >= 50 ? "#4ade80" : pctComplete >= 25 ? "#facc15" : "#ef4444"}
+          stroke={arcColor}
           strokeWidth="8"
           strokeLinecap="round"
           strokeDasharray={circumference}
@@ -113,7 +116,7 @@ function MilestoneGauge({ pctComplete, currentWeight, nextMilestone }: {
           );
         })}
       </svg>
-      <p className="text-xs text-zinc-500 -mt-2">
+      <p className="text-xs text-zinc-500 -mt-1">
         {pctComplete.toFixed(1)}% complete · Next: {nextMilestone.label} ({nextMilestone.weight} lbs)
       </p>
     </div>
@@ -252,6 +255,7 @@ export function StatusGraphic({ weights, nutritionDates = [], todayProtein = nul
         pctComplete={pace.pctComplete}
         currentWeight={latest.weightLbs}
         nextMilestone={pace.nextMilestone}
+        paceStatus={pace.status}
       />
     </div>
   );
