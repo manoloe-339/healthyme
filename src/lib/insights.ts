@@ -112,7 +112,7 @@ ${nutritionData.map((n) => `- ${n.date}: ${n.calories ? Math.round(n.calories) +
     prompt += `
 
 ### Nutrition
-Not tracked — recommend the client start logging meals for better insights.`;
+Not logged for this period. ${uc.eatingProtocol.loggingHabit}`;
   }
 
   if (activityData && activityData.length > 0) {
