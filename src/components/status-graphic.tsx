@@ -147,8 +147,8 @@ export function StatusGraphic({ weights, nutritionDates = [], todayProtein = nul
             d={`M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}`}
             fill="none" stroke={arcColor} strokeWidth="10" strokeLinecap="round"
             strokeDasharray={circumference}
-            strokeDashoffset={circumference - (segProgress / 100) * circumference}
-            className="transition-all duration-1000 ease-out"
+            strokeDashoffset={circumference * (1 - segProgress / 100)}
+            style={{ transition: "stroke-dashoffset 1s ease-out" }}
           />
           {/* Target gold dot at right end */}
           <circle cx={targetX} cy={targetY} r="7" fill="#facc15" opacity="0.9" />
@@ -165,6 +165,10 @@ export function StatusGraphic({ weights, nutritionDates = [], todayProtein = nul
           {/* Pace line */}
           <text x={cx} y={cy + 10} textAnchor="middle" fill={arcColor} fontSize="11" fontWeight="500">
             {pace.status === "green" ? "Ahead of pace" : pace.status === "yellow" ? "Close to pace" : "Behind pace"} · {pace.requiredPacePerWeek.toFixed(1)} lbs/wk
+          </text>
+          {/* Debug: segment info */}
+          <text x={cx} y={cy + 25} textAnchor="middle" fill="#52525b" fontSize="9">
+            {Math.round(segStart)}→{segEnd} · {segProgress.toFixed(0)}% done
           </text>
 
           {/* Target weight next to gold dot */}
