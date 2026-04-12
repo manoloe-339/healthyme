@@ -6,6 +6,7 @@ const insightSchema = z.object({
   weightTrend: z.string().describe("Description of weight trend over the window"),
   sleepCorrelation: z.string().describe("How sleep performance and duration correlate with weight changes"),
   nutritionCorrelation: z.string().describe("How macros (protein, carbs, fat, calories) correlate with WHOOP recovery, strain, and weight changes. Note patterns like high protein days vs recovery, calorie deficit vs strain tolerance, carb timing vs sleep quality.").optional(),
+  nutritionImpact: z.string().describe("Two-part analysis of diet: (1) BACKWARD-LOOKING: how what was eaten in the last few days likely impacted sleep quality, recovery scores, energy levels, and how the body feels today. (2) FORWARD-LOOKING: based on current nutrition patterns, what to expect for tonight's sleep, tomorrow's recovery, and exercise performance — and specific dietary actions to take today (what to eat, how much protein, whether to increase carbs before a workout, etc).").optional(),
   workoutPrescription: z.string().describe("Recommended workout type and intensity for tomorrow"),
   insightText: z.string().describe("Full natural-language daily insight paragraph"),
 });
@@ -100,7 +101,24 @@ For the nutritionCorrelation field, specifically analyze:
 - Is there a pattern between carb intake and sleep quality/duration?
 - Does fat intake level affect next-day HRV?
 - Are there any visible macro ratios that coincide with weight drops vs stalls?
-- If nutrition is not logged, say "No nutrition data logged — start tracking meals to unlock macro-recovery correlations."`;
+- If nutrition is not logged, say "No nutrition data logged — start tracking meals to unlock macro-recovery correlations."
+
+## Diet Impact Analysis (nutritionImpact field)
+This MUST have two clearly labeled parts:
+
+**PART 1 — How what you ate affected you:**
+- How did the last 2-3 days of eating likely impact today's recovery score, sleep quality, energy, and how the body feels?
+- Was protein sufficient to support muscle repair after strain?
+- Did low carb intake hurt sleep quality or recovery?
+- Did a calorie deficit cause higher perceived exertion or lower HRV?
+- Be specific about which meals/days caused which effects
+
+**PART 2 — What to expect and what to do today:**
+- Based on current nutrition patterns, predict tonight's sleep quality and tomorrow's recovery
+- Give specific dietary actions for today: exact protein target, whether to add carbs pre-workout, hydration needs
+- If there's a workout today, what to eat before and after
+- If nutrition has been too low, prescribe a recovery eating plan for today
+- If nutrition is not logged, say "No nutrition data — log meals today to get personalized diet guidance tomorrow."`;
 
   const result = await generateText({
     model: anthropic("claude-sonnet-4-5-20250929"),

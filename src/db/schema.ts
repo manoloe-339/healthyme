@@ -67,6 +67,7 @@ export const dailyInsight = pgTable("daily_insight", {
   weightTrend: text("weight_trend"),
   sleepCorrelation: text("sleep_correlation"),
   nutritionCorrelation: text("nutrition_correlation"),
+  nutritionImpact: text("nutrition_impact"),
   workoutPrescription: text("workout_prescription"),
   insightText: text("insight_text").notNull(),
   recoveryScore: real("recovery_score"),

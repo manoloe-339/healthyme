@@ -45,6 +45,7 @@ interface Insight {
   weightTrend: string | null;
   sleepCorrelation: string | null;
   nutritionCorrelation: string | null;
+  nutritionImpact: string | null;
   workoutPrescription: string | null;
   insightText: string;
   recoveryScore: number | null;
@@ -368,6 +369,21 @@ export default function Dashboard() {
           </Card>
         )}
       </div>
+
+      {/* Diet Impact */}
+      {data?.latestInsight?.nutritionImpact && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Diet Impact Analysis</CardTitle>
+            <CardDescription>How what you ate affected you — and what to do today</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm leading-relaxed whitespace-pre-line">
+              {data.latestInsight.nutritionImpact}
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Body Composition */}
       {data?.weight && data.weight.some((w) => 'bodyFatPct' in w) && (
