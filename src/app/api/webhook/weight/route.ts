@@ -69,9 +69,16 @@ export async function POST(request: NextRequest) {
     const dateStr = entry.date ?? entry.timestamp;
     if (!dateStr) continue;
     const date = String(dateStr).split("T")[0];
-    const weightKg = entry.qty ?? entry.value;
+    let weight = entry.qty ?? entry.value;
+    if (!date || !weight || typeof weight !== "number") continue;
 
-    if (!date || !weightKg || typeof weightKg !== "number") continue;
+    // Health Auto Export sends in the user's Apple Health unit
+    // Detect lbs vs kg: if value > 140, it's almost certainly lbs
+    const unit = entry.units ?? weightMetric.units ?? "";
+    const isLbs = unit.toLowerCase().includes("lb") || unit.toLowerCase().includes("pound") || weight > 140;
+    const weightKg = isLbs ? weight / 2.20462 : weight;
+
+    console.log(`Weight entry: ${weight} ${isLbs ? "lbs" : "kg"} -> ${weightKg.toFixed(1)} kg`);
 
     await db
       .insert(weightLog)
