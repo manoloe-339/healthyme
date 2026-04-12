@@ -70,9 +70,9 @@ function MilestoneGauge({ pctComplete, currentWeight, nextMilestone, paceStatus 
     return () => clearTimeout(timer);
   }, [pctComplete]);
 
-  const radius = 80;
-  const cx = 90;
-  const cy = 85;
+  const radius = 75;
+  const cx = 85;
+  const cy = 80;
   const circumference = Math.PI * radius;
   const strokeOffset = circumference - (animatedPct / 100) * circumference;
 
@@ -86,7 +86,7 @@ function MilestoneGauge({ pctComplete, currentWeight, nextMilestone, paceStatus 
 
   return (
     <div className="flex flex-col items-center">
-      <svg width="180" height="95" viewBox="0 0 180 95">
+      <svg width="170" height="90" viewBox="0 0 170 90">
         <path
           d={`M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}`}
           fill="none"

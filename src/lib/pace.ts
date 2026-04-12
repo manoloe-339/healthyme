@@ -37,22 +37,36 @@ export function getPaceStatus(currentWeight: number, today: string) {
 
   const requiredPacePerWeek = ((currentWeight - BASELINE.goalWeight) / daysRemaining) * 7;
 
-  // Expected weight for today (linear interpolation)
-  const expectedWeight = BASELINE.startWeight - (totalToLose * (daysElapsed / totalDays));
+  // Use milestone targets for expected weight (not linear)
+  // Find the two milestones that bracket today
+  const allPoints = [
+    { date: BASELINE.startDate, weight: BASELINE.startWeight },
+    ...MILESTONES.map((m) => ({ date: m.date, weight: m.weight })),
+  ];
+  let expectedWeight = BASELINE.startWeight;
+  for (let i = 0; i < allPoints.length - 1; i++) {
+    if (today >= allPoints[i].date && today <= allPoints[i + 1].date) {
+      const segDays = daysBetween(allPoints[i].date, allPoints[i + 1].date);
+      const segElapsed = daysBetween(allPoints[i].date, today);
+      const segPct = segDays > 0 ? segElapsed / segDays : 0;
+      expectedWeight = allPoints[i].weight - (allPoints[i].weight - allPoints[i + 1].weight) * segPct;
+      break;
+    }
+  }
 
   const nextMilestone = getNextMilestone(currentWeight);
   const daysToMilestone = daysBetween(today, nextMilestone.date);
   const lbsToMilestone = currentWeight - nextMilestone.weight;
 
-  // Pace status: compare actual vs expected
+  // Pace status: compare actual vs milestone-based expected
   const diff = currentWeight - expectedWeight; // negative = ahead, positive = behind
   let status: "green" | "yellow" | "red";
-  if (diff <= 0) {
-    status = "green"; // ahead of pace
-  } else if (diff <= totalToLose * 0.1) {
-    status = "yellow"; // within 10%
+  if (diff <= 2) {
+    status = "green"; // within 2 lbs of expected = on track
+  } else if (diff <= 5) {
+    status = "yellow"; // 2-5 lbs behind = close
   } else {
-    status = "red"; // behind pace
+    status = "red"; // more than 5 lbs behind
   }
 
   return {
@@ -80,26 +94,31 @@ export function getWeightTrends(
   const sorted = [...weights].sort((a, b) => a.date.localeCompare(b.date));
   const latest = sorted[sorted.length - 1].weightLbs;
 
-  function lostSince(daysAgo: number): number | null {
+  function lostSince(daysAgo: number): { value: number; actualDays: number } | null {
     const cutoff = new Date(today + "T12:00:00");
     cutoff.setDate(cutoff.getDate() - daysAgo);
     const cutoffStr = cutoff.toISOString().split("T")[0];
-    const earliest = sorted.find((w) => w.date >= cutoffStr);
-    if (!earliest) return null;
-    return earliest.weightLbs - latest;
+    const earliest = sorted.find((w) => w.date <= cutoffStr);
+    if (!earliest) {
+      // Not enough history — use the oldest data point we have
+      const oldest = sorted[0];
+      const actualDays = daysBetween(oldest.date, today);
+      if (actualDays < daysAgo * 0.5) return null; // Less than half the window, don't show
+      return { value: oldest.weightLbs - latest, actualDays };
+    }
+    return { value: earliest.weightLbs - latest, actualDays: daysAgo };
   }
 
   const sinceBaseline = BASELINE.startWeight - latest;
 
-  // Required pace for each window
-  const totalDays = daysBetween(BASELINE.startDate, BASELINE.goalDate);
-  const requiredPerDay = (BASELINE.startWeight - BASELINE.goalWeight) / totalDays;
-
-  function paceStatus(lost: number | null, days: number): "green" | "yellow" | "red" {
-    if (lost === null) return "yellow";
-    const required = requiredPerDay * days;
-    if (lost >= required) return "green";
-    if (lost >= required * 0.9) return "yellow";
+  function paceStatus(result: { value: number; actualDays: number } | null, targetDays: number): "green" | "yellow" | "red" {
+    if (result === null) return "yellow";
+    // Scale required pace to actual days covered
+    const totalDays = daysBetween(BASELINE.startDate, BASELINE.goalDate);
+    const requiredPerDay = (BASELINE.startWeight - BASELINE.goalWeight) / totalDays;
+    const required = requiredPerDay * result.actualDays;
+    if (result.value >= required * 0.9) return "green";
+    if (result.value >= required * 0.7) return "yellow";
     return "red";
   }
 
@@ -108,9 +127,9 @@ export function getWeightTrends(
   const lost90 = lostSince(90);
 
   return {
-    lost7: { value: lost7, status: paceStatus(lost7, 7) },
-    lost30: { value: lost30, status: paceStatus(lost30, 30) },
-    lost90: { value: lost90, status: paceStatus(lost90, 90) },
+    lost7: { value: lost7?.value ?? null, status: paceStatus(lost7, 7) },
+    lost30: { value: lost30?.value ?? null, status: paceStatus(lost30, 30) },
+    lost90: { value: lost90?.value ?? null, status: paceStatus(lost90, 90) },
     sinceBaseline: { value: sinceBaseline, status: sinceBaseline > 0 ? "green" as const : "red" as const },
   };
 }
