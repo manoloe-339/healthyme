@@ -11,9 +11,10 @@ export async function GET(request: NextRequest) {
 
   const db = getDb();
 
-  const [recovery, weight, insights, nutrition, activity, lastWeightSync, lastWhoopSync] = await Promise.all([
+  const [recovery, weight, allWeight, insights, nutrition, activity, lastWeightSync, lastWhoopSync] = await Promise.all([
     db.select().from(whoopRecovery).orderBy(desc(whoopRecovery.date)).limit(limit),
     db.select().from(weightLog).orderBy(desc(weightLog.date)).limit(limit),
+    db.select({ date: weightLog.date, weightKg: weightLog.weightKg }).from(weightLog).orderBy(desc(weightLog.date)).limit(120),
     db.select().from(dailyInsight).orderBy(desc(dailyInsight.date)).limit(1),
     db.select().from(dailyNutrition).orderBy(desc(dailyNutrition.date)).limit(limit),
     db.select().from(dailyActivity).orderBy(desc(dailyActivity.date)).limit(limit),
@@ -56,6 +57,7 @@ export async function GET(request: NextRequest) {
     window: limit,
     recovery: recovery.reverse(),
     weight: weight.reverse(),
+    allWeight: allWeight.reverse().map((w) => ({ date: w.date, weightLbs: w.weightKg * 2.20462 })),
     nutrition: filledNutrition,
     activity: activity.reverse(),
     correlations,

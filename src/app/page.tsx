@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { CorrelationChart } from "@/components/correlation-chart";
+import { StatusGraphic } from "@/components/status-graphic";
 
 // --- Types ---
 
@@ -88,6 +89,7 @@ interface Insight {
 interface DashboardData {
   recovery: RecoveryEntry[];
   weight: WeightEntry[];
+  allWeight: { date: string; weightLbs: number }[];
   nutrition: NutritionEntry[];
   activity: ActivityEntry[];
   correlations: Correlations;
@@ -323,6 +325,15 @@ export default function Dashboard() {
             Metabolic risk — prioritize sleep tonight.
           </AlertDescription>
         </Alert>
+      )}
+
+      {/* STATUS GRAPHIC */}
+      {data?.allWeight && data.allWeight.length > 0 && (
+        <Card className="overflow-hidden">
+          <CardContent className="pt-6">
+            <StatusGraphic weights={data.allWeight} />
+          </CardContent>
+        </Card>
       )}
 
       {/* 0. TODAY'S ORDERS */}
