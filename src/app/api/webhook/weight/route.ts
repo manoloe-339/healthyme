@@ -1,97 +1,177 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
-import { weightLog } from "@/db/schema";
+import { weightLog, dailyNutrition, dailyActivity } from "@/db/schema";
 import { sql } from "drizzle-orm";
 
-const WEIGHT_NAMES = [
-  "body_mass",
-  "weight",
-  "weight_body_mass",
-  "body_weight",
-  "lean_body_mass",
-  "Weight",
-  "Body Mass",
-];
+function lbsToKg(lbs: number): number {
+  return lbs / 2.20462;
+}
+
+function getMetric(metrics: Record<string, unknown>[], name: string) {
+  return metrics.find(
+    (m: Record<string, unknown>) =>
+      (m.name as string)?.toLowerCase() === name.toLowerCase()
+  ) as { name: string; units: string; data: { date: string; qty: number }[] } | undefined;
+}
+
+function sumByDate(data: { date: string; qty: number }[]): Map<string, number> {
+  const map = new Map<string, number>();
+  for (const entry of data) {
+    const date = String(entry.date).split("T")[0];
+    map.set(date, (map.get(date) ?? 0) + (entry.qty ?? 0));
+  }
+  return map;
+}
+
+function latestByDate(data: { date: string; qty: number }[]): Map<string, number> {
+  const map = new Map<string, number>();
+  for (const entry of data) {
+    const date = String(entry.date).split("T")[0];
+    map.set(date, entry.qty ?? 0);
+  }
+  return map;
+}
 
 export async function POST(request: NextRequest) {
-  const rawBody = await request.text();
-  console.log("Webhook raw body:", rawBody.substring(0, 1000));
-
-  let body;
-  try {
-    body = JSON.parse(rawBody);
-  } catch {
-    return NextResponse.json(
-      { error: "Invalid JSON", received: rawBody.substring(0, 200) },
-      { status: 400 }
-    );
-  }
-
-  // Health Auto Export can send in multiple formats
+  const body = await request.json();
   const metrics = body.data?.metrics ?? body.metrics ?? [];
 
-  // Try to find weight metric by name
-  let weightMetric = metrics.find((m: { name: string }) =>
-    WEIGHT_NAMES.some(
-      (n) => m.name?.toLowerCase() === n.toLowerCase()
-    )
-  );
-
-  // If no match, log all metric names and try the first metric with numeric data
-  if (!weightMetric) {
-    const metricNames = metrics.map((m: { name: string }) => m.name);
-    console.log("Available metrics:", JSON.stringify(metricNames));
-
-    // Try first metric that has data with a qty or value field
-    weightMetric = metrics.find(
-      (m: { data?: { qty?: number; value?: number }[] }) =>
-        m.data?.some(
-          (d: { qty?: number; value?: number }) =>
-            d.qty !== undefined || d.value !== undefined
-        )
-    );
-  }
-
-  if (!weightMetric?.data?.length) {
-    return NextResponse.json(
-      {
-        error: "No weight data found",
-        availableMetrics: metrics.map((m: { name: string }) => m.name),
-      },
-      { status: 400 }
-    );
+  if (!metrics.length) {
+    return NextResponse.json({ error: "No metrics" }, { status: 400 });
   }
 
   const db = getDb();
-  let inserted = 0;
+  const results: Record<string, number> = {};
 
-  for (const entry of weightMetric.data) {
-    const dateStr = entry.date ?? entry.timestamp;
-    if (!dateStr) continue;
-    const date = String(dateStr).split("T")[0];
-    let weight = entry.qty ?? entry.value;
-    if (!date || !weight || typeof weight !== "number") continue;
+  // --- Weight, body fat, lean body mass ---
+  const weightMetric = getMetric(metrics, "weight_body_mass");
+  const bodyFatMetric = getMetric(metrics, "body_fat_percentage");
+  const leanMassMetric = getMetric(metrics, "lean_body_mass");
 
-    // Health Auto Export sends in the user's Apple Health unit
-    // Detect lbs vs kg: if value > 140, it's almost certainly lbs
-    const unit = entry.units ?? weightMetric.units ?? "";
-    const isLbs = unit.toLowerCase().includes("lb") || unit.toLowerCase().includes("pound") || weight > 140;
-    const weightKg = isLbs ? weight / 2.20462 : weight;
+  if (weightMetric?.data?.length) {
+    const isLbs = weightMetric.units?.toLowerCase().includes("lb") ||
+      (weightMetric.data[0]?.qty > 140);
 
-    console.log(`Weight entry: ${weight} ${isLbs ? "lbs" : "kg"} -> ${weightKg.toFixed(1)} kg`);
+    const bodyFatByDate = bodyFatMetric ? latestByDate(bodyFatMetric.data) : new Map();
+    const leanMassByDate = leanMassMetric ? latestByDate(leanMassMetric.data) : new Map();
+    const leanMassIsLbs = leanMassMetric?.units?.toLowerCase().includes("lb");
 
-    await db
-      .insert(weightLog)
-      .values({ date, weightKg, source: "health_auto_export" })
-      .onConflictDoUpdate({
-        target: weightLog.date,
-        set: {
-          weightKg: sql`excluded.weight_kg`,
-          source: sql`excluded.source`,
-        },
-      });
-    inserted++;
+    for (const entry of weightMetric.data) {
+      const date = String(entry.date).split("T")[0];
+      const weightKg = isLbs ? lbsToKg(entry.qty) : entry.qty;
+      if (!date || !weightKg) continue;
+
+      const bodyFat = bodyFatByDate.get(date) ?? null;
+      const leanRaw = leanMassByDate.get(date) ?? null;
+      const leanKg = leanRaw !== null && leanMassIsLbs ? lbsToKg(leanRaw) : leanRaw;
+
+      await db
+        .insert(weightLog)
+        .values({ date, weightKg, bodyFatPct: bodyFat, leanBodyMassKg: leanKg, source: "health_auto_export" })
+        .onConflictDoUpdate({
+          target: weightLog.date,
+          set: {
+            weightKg: sql`excluded.weight_kg`,
+            bodyFatPct: sql`excluded.body_fat_pct`,
+            leanBodyMassKg: sql`excluded.lean_body_mass_kg`,
+            source: sql`excluded.source`,
+          },
+        });
+    }
+    results.weight = weightMetric.data.length;
   }
 
-  return NextResponse.json({ ok: true, inserted, metric: weightMetric.name });
+  // --- Nutrition ---
+  const calorieMetric = getMetric(metrics, "dietary_energy");
+  const proteinMetric = getMetric(metrics, "protein");
+  const carbMetric = getMetric(metrics, "carbohydrates");
+  const fatMetric = getMetric(metrics, "total_fat");
+  const fiberMetric = getMetric(metrics, "fiber");
+  const sugarMetric = getMetric(metrics, "dietary_sugar");
+
+  const nutritionDates = new Set<string>();
+  [calorieMetric, proteinMetric, carbMetric, fatMetric, fiberMetric, sugarMetric].forEach((m) => {
+    m?.data?.forEach((d) => nutritionDates.add(String(d.date).split("T")[0]));
+  });
+
+  if (nutritionDates.size > 0) {
+    const cal = calorieMetric ? sumByDate(calorieMetric.data) : new Map();
+    const pro = proteinMetric ? sumByDate(proteinMetric.data) : new Map();
+    const carb = carbMetric ? sumByDate(carbMetric.data) : new Map();
+    const fat = fatMetric ? sumByDate(fatMetric.data) : new Map();
+    const fib = fiberMetric ? sumByDate(fiberMetric.data) : new Map();
+    const sug = sugarMetric ? sumByDate(sugarMetric.data) : new Map();
+
+    for (const date of nutritionDates) {
+      await db
+        .insert(dailyNutrition)
+        .values({
+          date,
+          calories: cal.get(date) ?? null,
+          protein: pro.get(date) ?? null,
+          carbs: carb.get(date) ?? null,
+          totalFat: fat.get(date) ?? null,
+          fiber: fib.get(date) ?? null,
+          sugar: sug.get(date) ?? null,
+        })
+        .onConflictDoUpdate({
+          target: dailyNutrition.date,
+          set: {
+            calories: sql`excluded.calories`,
+            protein: sql`excluded.protein`,
+            carbs: sql`excluded.carbs`,
+            totalFat: sql`excluded.total_fat`,
+            fiber: sql`excluded.fiber`,
+            sugar: sql`excluded.sugar`,
+          },
+        });
+    }
+    results.nutrition = nutritionDates.size;
+  }
+
+  // --- Activity ---
+  const stepMetric = getMetric(metrics, "step_count");
+  const activeEnergyMetric = getMetric(metrics, "active_energy");
+  const exerciseMetric = getMetric(metrics, "apple_exercise_time");
+  const flightsMetric = getMetric(metrics, "flights_climbed");
+  const distanceMetric = getMetric(metrics, "walking_running_distance");
+
+  const activityDates = new Set<string>();
+  [stepMetric, activeEnergyMetric, exerciseMetric, flightsMetric, distanceMetric].forEach((m) => {
+    m?.data?.forEach((d) => activityDates.add(String(d.date).split("T")[0]));
+  });
+
+  if (activityDates.size > 0) {
+    const steps = stepMetric ? sumByDate(stepMetric.data) : new Map();
+    const active = activeEnergyMetric ? sumByDate(activeEnergyMetric.data) : new Map();
+    const exercise = exerciseMetric ? sumByDate(exerciseMetric.data) : new Map();
+    const flights = flightsMetric ? sumByDate(flightsMetric.data) : new Map();
+    const dist = distanceMetric ? sumByDate(distanceMetric.data) : new Map();
+
+    for (const date of activityDates) {
+      await db
+        .insert(dailyActivity)
+        .values({
+          date,
+          steps: steps.get(date) ? Math.round(steps.get(date)!) : null,
+          activeEnergy: active.get(date) ?? null,
+          exerciseMinutes: exercise.get(date) ?? null,
+          flightsClimbed: flights.get(date) ? Math.round(flights.get(date)!) : null,
+          walkingDistance: dist.get(date) ?? null,
+        })
+        .onConflictDoUpdate({
+          target: dailyActivity.date,
+          set: {
+            steps: sql`excluded.steps`,
+            activeEnergy: sql`excluded.active_energy`,
+            exerciseMinutes: sql`excluded.exercise_minutes`,
+            flightsClimbed: sql`excluded.flights_climbed`,
+            walkingDistance: sql`excluded.walking_distance_mi`,
+          },
+        });
+    }
+    results.activity = activityDates.size;
+  }
+
+  return NextResponse.json({ ok: true, results });
 }
