@@ -48,9 +48,10 @@ export async function POST(request: NextRequest) {
 
   // Log raw sleep data for debugging
   console.log(`Sleep records: ${sleeps.length}`);
-  sleeps.forEach((s) => {
-    console.log(`Sleep: end=${s.end}, score_state=${s.score_state}, score=${JSON.stringify(s.score).substring(0, 200)}`);
-  });
+  if (sleeps.length > 0) {
+    console.log(`SLEEP_SCORE_KEYS: ${Object.keys(sleeps[0].score ?? {})}`);
+    console.log(`SLEEP_FIRST: ${JSON.stringify(sleeps[0]).substring(0, 500)}`);
+  }
 
   // Index sleep by date (use the end time as the "night of" date)
   const sleepByDate = new Map(
