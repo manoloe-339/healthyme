@@ -103,6 +103,7 @@ export async function POST(request: NextRequest) {
           sleepPerformance: sql`excluded.sleep_performance`,
           sleepDurationMs: sql`excluded.sleep_duration_ms`,
           strain: sql`excluded.strain`,
+          createdAt: sql`now()`,
         },
       });
   }
