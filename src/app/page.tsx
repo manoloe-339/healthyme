@@ -297,7 +297,9 @@ export default function Dashboard() {
             <p className="text-[10px] sm:text-xs text-zinc-600 mt-0.5 truncate">
               Export: {timeAgo(data.lastSync.autoExport)} · WHOOP: {timeAgo(data.lastSync.whoop)}
               {data.nutrition && data.nutrition.length > 0 && (
-                <> · Last log: {formatDate([...data.nutrition].sort((a, b) => b.date.localeCompare(a.date))[0].date)}</>
+                <> · Last log: {formatDate([...data.nutrition].sort((a, b) => b.date.localeCompare(a.date))[0].date)}
+                  {data.lastSync.autoExport && ` at ${new Date(data.lastSync.autoExport).toLocaleTimeString("en-US", { timeZone: "America/Los_Angeles", hour: "numeric", minute: "2-digit" })}`}
+                </>
               )}
             </p>
           )}
@@ -689,7 +691,7 @@ function CopyFooter({ data, insight }: { data: DashboardData | null; insight: In
   return (
     <div className="border-t border-border/30 pt-4 mt-4 flex items-center justify-between">
       <p className="text-[10px] text-zinc-700 font-mono">
-        v0.1.0 · {process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.substring(0, 7) ?? "dev"} · {process.env.NEXT_PUBLIC_VERCEL_ENV ?? "local"}
+        v0.1.0 · {process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.substring(0, 7) ?? "dev"} · {new Date(parseInt(process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_DATE || "0") || Date.now()).toLocaleString("en-US", { timeZone: "America/Los_Angeles", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })} PT
       </p>
       <button
         onClick={copyToClipboard}
