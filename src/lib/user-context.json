@@ -69,6 +69,7 @@
     "primaryRisk": "Jul-Aug grind zone where motivation erodes and protocol breaks down"
   },
   "insightRules": {
+    "wakeTime": "Often 5:30am PT on weekdays for work, can push to 6:30am+ if needed to get full sleep. If recovery is low, recommend pushing wake time.",
     "sleepWarning": "Flag sleep below 65% for 3+ consecutive nights as metabolic warning",
     "rollingWindow": "Use 3-5 day rolling window for weight and recovery correlation, not single day readings",
     "workoutPrescription": "Prescribe tomorrow's workout intensity based on recovery score",

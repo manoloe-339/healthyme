@@ -162,41 +162,41 @@ export function StatusGraphic({ weights }: Props) {
       {showConfetti && <Confetti />}
 
       {/* Status Indicator + Current Weight */}
-      <div className="flex flex-col items-center py-4">
-        <div className={`w-4 h-4 rounded-full ${colors.bg} shadow-lg ${colors.glow} animate-pulse mb-3`} />
-        <p className={`text-5xl font-mono font-bold ${colors.text} tracking-tight`}>
+      <div className="flex flex-col items-center py-3 sm:py-4">
+        <div className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full ${colors.bg} shadow-lg ${colors.glow} animate-pulse mb-2 sm:mb-3`} />
+        <p className={`text-4xl sm:text-5xl font-mono font-bold ${colors.text} tracking-tight`}>
           {latest.weightLbs.toFixed(1)}
         </p>
-        <p className="text-sm text-zinc-500 mt-1">lbs</p>
-        <div className="flex gap-4 mt-2 text-xs text-zinc-500">
-          <span>{pace.lbsToMilestone.toFixed(1)} lbs to {pace.nextMilestone.label}</span>
+        <p className="text-xs sm:text-sm text-zinc-500 mt-1">lbs</p>
+        <div className="flex gap-2 sm:gap-4 mt-2 text-[10px] sm:text-xs text-zinc-500">
+          <span>{pace.lbsToMilestone.toFixed(1)} to {pace.nextMilestone.label}</span>
           <span>·</span>
-          <span>{pace.daysToMilestone}d remaining</span>
+          <span>{pace.daysToMilestone}d left</span>
         </div>
-        <p className={`text-xs mt-1 ${colors.text}`}>
+        <p className={`text-[10px] sm:text-xs mt-1 ${colors.text}`}>
           {pace.status === "green" ? "Ahead of pace" : pace.status === "yellow" ? "Close to pace" : "Behind pace"}
-          {" · "}{pace.requiredPacePerWeek.toFixed(1)} lbs/week needed
+          {" · "}{pace.requiredPacePerWeek.toFixed(1)} lbs/wk needed
         </p>
       </div>
 
       {/* Weight Trend Strip */}
       {trends && (
-        <div className="grid grid-cols-4 gap-2">
-          <div className={`rounded-lg border px-2 py-2 text-center ${TILE_COLORS[trends.lost7.status]}`}>
-            <p className="text-lg font-mono font-bold">{trends.lost7.value?.toFixed(1) ?? "—"}</p>
-            <p className="text-[9px] uppercase tracking-wider mt-0.5">Lost 7d</p>
+        <div className="grid grid-cols-4 gap-1 sm:gap-2">
+          <div className={`rounded-lg border px-1 sm:px-2 py-1.5 sm:py-2 text-center ${TILE_COLORS[trends.lost7.status]}`}>
+            <p className="text-base sm:text-lg font-mono font-bold">{trends.lost7.value?.toFixed(1) ?? "—"}</p>
+            <p className="text-[8px] sm:text-[9px] uppercase tracking-wider mt-0.5">7d</p>
           </div>
-          <div className={`rounded-lg border px-2 py-2 text-center ${TILE_COLORS[trends.lost30.status]}`}>
-            <p className="text-lg font-mono font-bold">{trends.lost30.value?.toFixed(1) ?? "—"}</p>
-            <p className="text-[9px] uppercase tracking-wider mt-0.5">Lost 30d</p>
+          <div className={`rounded-lg border px-1 sm:px-2 py-1.5 sm:py-2 text-center ${TILE_COLORS[trends.lost30.status]}`}>
+            <p className="text-base sm:text-lg font-mono font-bold">{trends.lost30.value?.toFixed(1) ?? "—"}</p>
+            <p className="text-[8px] sm:text-[9px] uppercase tracking-wider mt-0.5">30d</p>
           </div>
-          <div className={`rounded-lg border px-2 py-2 text-center ${TILE_COLORS[trends.lost90.status]}`}>
-            <p className="text-lg font-mono font-bold">{trends.lost90.value?.toFixed(1) ?? "—"}</p>
-            <p className="text-[9px] uppercase tracking-wider mt-0.5">Lost 90d</p>
+          <div className={`rounded-lg border px-1 sm:px-2 py-1.5 sm:py-2 text-center ${TILE_COLORS[trends.lost90.status]}`}>
+            <p className="text-base sm:text-lg font-mono font-bold">{trends.lost90.value?.toFixed(1) ?? "—"}</p>
+            <p className="text-[8px] sm:text-[9px] uppercase tracking-wider mt-0.5">90d</p>
           </div>
-          <div className={`rounded-lg border px-2 py-2 text-center ${TILE_COLORS[trends.sinceBaseline.status]}`}>
-            <p className="text-lg font-mono font-bold">{trends.sinceBaseline.value.toFixed(1)}</p>
-            <p className="text-[9px] uppercase tracking-wider mt-0.5">Since Feb 11</p>
+          <div className={`rounded-lg border px-1 sm:px-2 py-1.5 sm:py-2 text-center ${TILE_COLORS[trends.sinceBaseline.status]}`}>
+            <p className="text-base sm:text-lg font-mono font-bold">{trends.sinceBaseline.value.toFixed(1)}</p>
+            <p className="text-[8px] sm:text-[9px] uppercase tracking-wider mt-0.5">Feb 11</p>
           </div>
         </div>
       )}

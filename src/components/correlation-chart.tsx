@@ -39,7 +39,7 @@ export function CorrelationChart({ data }: { data: ChartData[] }) {
   }));
 
   return (
-    <ResponsiveContainer width="100%" height={280}>
+    <ResponsiveContainer width="100%" height={220}>
       <ComposedChart data={chartData}>
         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
         <XAxis

@@ -37,6 +37,8 @@ function latestByDate(data: { date: string; qty: number }[]): Map<string, number
   return map;
 }
 
+export const maxDuration = 60;
+
 export async function POST(request: NextRequest) {
   const body = await request.json();
   const metrics = body.data?.metrics ?? body.metrics ?? [];

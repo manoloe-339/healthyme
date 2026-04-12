@@ -288,24 +288,24 @@ export default function Dashboard() {
   const currentLbs = latestWeight ? kgToLbs(latestWeight.weightKg) : null;
 
   return (
-    <main className="mx-auto max-w-3xl p-4 sm:p-6 space-y-4">
+    <main className="mx-auto max-w-3xl px-3 py-3 sm:p-6 space-y-3 sm:space-y-4">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight text-white">healthyme</h1>
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h1 className="text-lg sm:text-xl font-bold tracking-tight text-white">healthyme</h1>
           {data?.lastSync && (
-            <p className="text-xs text-zinc-600 mt-0.5">
-              Auto Export: {timeAgo(data.lastSync.autoExport)} · WHOOP: {timeAgo(data.lastSync.whoop)}
+            <p className="text-[10px] sm:text-xs text-zinc-600 mt-0.5 truncate">
+              Export: {timeAgo(data.lastSync.autoExport)} · WHOOP: {timeAgo(data.lastSync.whoop)}
             </p>
           )}
         </div>
-        <div className="flex gap-2 items-center">
-          <Link href="/insights"><Button variant="ghost" size="sm" className="text-xs">History</Button></Link>
-          <Button variant="secondary" size="sm" className="text-xs" onClick={syncWhoop} disabled={syncing}>
-            {syncing ? "Syncing..." : "Sync"}
+        <div className="flex gap-1.5 sm:gap-2 items-center shrink-0">
+          <Link href="/insights"><Button variant="ghost" size="sm" className="text-[10px] sm:text-xs px-2 h-7">History</Button></Link>
+          <Button variant="secondary" size="sm" className="text-[10px] sm:text-xs px-2 h-7" onClick={syncWhoop} disabled={syncing}>
+            {syncing ? "..." : "Sync"}
           </Button>
-          <Button size="sm" className="text-xs" onClick={generateInsight} disabled={generating}>
-            {generating ? "Generating..." : "Generate Insight"}
+          <Button size="sm" className="text-[10px] sm:text-xs px-2 h-7" onClick={generateInsight} disabled={generating}>
+            {generating ? "..." : "Insight"}
           </Button>
         </div>
       </div>
@@ -343,10 +343,10 @@ export default function Dashboard() {
             <CardTitle className="text-base font-medium text-white">Today&apos;s Orders</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1.5">
-            <p className="text-sm text-zinc-200 font-medium">{insight.orderStatus}</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-sm pt-1">
+            <p className="text-xs sm:text-sm text-zinc-200 font-medium">{insight.orderStatus}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-xs sm:text-sm pt-1">
               <div className="flex gap-2">
-                <span className="text-zinc-500 w-14 shrink-0">Eat</span>
+                <span className="text-zinc-500 w-12 sm:w-14 shrink-0">Eat</span>
                 <span className="text-zinc-300">{insight.orderEat}</span>
               </div>
               <div className="flex gap-2">
@@ -391,18 +391,18 @@ export default function Dashboard() {
         headline={insight?.statusHeadline ?? "Sync WHOOP to see current status."}
         expandLabel="Full Detail"
         defaultContent={
-          <div className="grid grid-cols-3 gap-2">
-            <div className={`rounded-lg border px-3 py-2 text-center ${latestRecovery ? statusColor(latestRecovery.recoveryScore, 70, 50) : "bg-zinc-900 border-zinc-800 text-zinc-500"}`}>
-              <p className="text-2xl font-mono font-bold">{latestRecovery?.recoveryScore ?? "—"}%</p>
-              <p className="text-[10px] uppercase tracking-wider mt-0.5">Recovery</p>
+          <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+            <div className={`rounded-lg border px-2 sm:px-3 py-2 text-center ${latestRecovery ? statusColor(latestRecovery.recoveryScore, 70, 50) : "bg-zinc-900 border-zinc-800 text-zinc-500"}`}>
+              <p className="text-xl sm:text-2xl font-mono font-bold">{latestRecovery?.recoveryScore ?? "—"}%</p>
+              <p className="text-[9px] sm:text-[10px] uppercase tracking-wider mt-0.5">Recovery</p>
             </div>
-            <div className={`rounded-lg border px-3 py-2 text-center ${latestRecovery?.sleepPerformance ? statusColor(latestRecovery.sleepPerformance, 75, 65) : "bg-zinc-900 border-zinc-800 text-zinc-500"}`}>
-              <p className="text-2xl font-mono font-bold">{latestRecovery?.sleepPerformance?.toFixed(0) ?? "—"}%</p>
-              <p className="text-[10px] uppercase tracking-wider mt-0.5">Sleep</p>
+            <div className={`rounded-lg border px-2 sm:px-3 py-2 text-center ${latestRecovery?.sleepPerformance ? statusColor(latestRecovery.sleepPerformance, 75, 65) : "bg-zinc-900 border-zinc-800 text-zinc-500"}`}>
+              <p className="text-xl sm:text-2xl font-mono font-bold">{latestRecovery?.sleepPerformance?.toFixed(0) ?? "—"}%</p>
+              <p className="text-[9px] sm:text-[10px] uppercase tracking-wider mt-0.5">Sleep</p>
             </div>
-            <div className={`rounded-lg border px-3 py-2 text-center ${currentLbs ? statusColor(currentLbs <= 209 ? 100 : currentLbs <= 215 ? 60 : 30, 70, 50) : "bg-zinc-900 border-zinc-800 text-zinc-500"}`}>
-              <p className="text-2xl font-mono font-bold">{currentLbs?.toFixed(1) ?? "—"}</p>
-              <p className="text-[10px] uppercase tracking-wider mt-0.5">Weight (lbs)</p>
+            <div className={`rounded-lg border px-2 sm:px-3 py-2 text-center ${currentLbs ? statusColor(currentLbs <= 209 ? 100 : currentLbs <= 215 ? 60 : 30, 70, 50) : "bg-zinc-900 border-zinc-800 text-zinc-500"}`}>
+              <p className="text-xl sm:text-2xl font-mono font-bold">{currentLbs?.toFixed(1) ?? "—"}</p>
+              <p className="text-[9px] sm:text-[10px] uppercase tracking-wider mt-0.5">Weight</p>
             </div>
           </div>
         }
