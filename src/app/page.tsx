@@ -296,6 +296,9 @@ export default function Dashboard() {
           {data?.lastSync && (
             <p className="text-[10px] sm:text-xs text-zinc-600 mt-0.5 truncate">
               Export: {timeAgo(data.lastSync.autoExport)} · WHOOP: {timeAgo(data.lastSync.whoop)}
+              {data.nutrition && data.nutrition.length > 0 && (
+                <> · Last log: {formatDate([...data.nutrition].sort((a, b) => b.date.localeCompare(a.date))[0].date)}</>
+              )}
             </p>
           )}
         </div>
