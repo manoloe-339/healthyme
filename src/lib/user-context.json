@@ -31,7 +31,7 @@
     "window": "11am-2pm daily",
     "orientation": "Low-carb, no strict elimination",
     "decisionFilter": "Protein-to-calorie ratio is the primary food choice metric",
-    "loggingHabit": "Does not always log meals. When nutrition data is missing for a day, assume he ate similar to the average of the fully logged days in the window — not the immediate prior day (which may be an outlier). Do NOT assume he skipped eating or fasted."
+    "loggingHabit": "Does not always log meals. When nutrition data is missing for a day, estimate intake from the TYPICAL logged days — use the median of logged days in the window, ignoring outliers. For example: if 4 days show ~1100 kcal and 1 day shows 3000 kcal (a refeed), the unlogged day should be assumed at ~1100, not ~1500. Outlier days (refeeds, cheat days) are intentional protocol events, not representative of normal intake. Do NOT assume he skipped eating or fasted on unlogged days."
   },
   "proteinStrategy": {
     "dailyMinimum": "120-130g",
