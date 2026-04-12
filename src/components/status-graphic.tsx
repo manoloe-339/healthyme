@@ -116,7 +116,7 @@ function MilestoneGauge({ pctComplete, currentWeight, nextMilestone, paceStatus 
           );
         })}
       </svg>
-      <p className="text-xs text-zinc-500 -mt-1">
+      <p className="text-xs text-zinc-500 mt-2">
         {pctComplete.toFixed(1)}% complete · Next: {nextMilestone.label} ({nextMilestone.weight} lbs)
       </p>
     </div>
