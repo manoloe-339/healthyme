@@ -49,11 +49,17 @@ interface Insight {
   weightKg: number | null;
 }
 
+interface LastSync {
+  autoExport: string | null;
+  whoop: string | null;
+}
+
 interface DashboardData {
   recovery: RecoveryEntry[];
   weight: WeightEntry[];
   correlations: Correlations;
   latestInsight: Insight | null;
+  lastSync: LastSync;
 }
 
 function recoveryColor(score: number): string {
@@ -72,6 +78,18 @@ function formatCorrelation(r: number | null): string {
   if (r === null) return "—";
   const sign = r >= 0 ? "+" : "";
   return `${sign}${r.toFixed(2)}`;
+}
+
+function timeAgo(dateStr: string | null): string {
+  if (!dateStr) return "never";
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
 }
 
 function kgToLbs(kg: number): number {
@@ -170,6 +188,12 @@ export default function Dashboard() {
           <p className="text-sm text-muted-foreground">
             Body recomposition dashboard
           </p>
+          {data?.lastSync && (
+            <div className="flex gap-3 text-xs text-muted-foreground mt-1">
+              <span>Auto Export: {timeAgo(data.lastSync.autoExport)}</span>
+              <span>WHOOP: {timeAgo(data.lastSync.whoop)}</span>
+            </div>
+          )}
         </div>
         <div className="flex gap-2">
           <Link href="/insights">

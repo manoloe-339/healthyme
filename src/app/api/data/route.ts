@@ -7,7 +7,7 @@ import { computeCorrelations } from "@/lib/correlation";
 export async function GET() {
   const db = getDb();
 
-  const [recovery, weight, insights] = await Promise.all([
+  const [recovery, weight, insights, lastWeightSync, lastWhoopSync] = await Promise.all([
     db
       .select()
       .from(whoopRecovery)
@@ -22,6 +22,16 @@ export async function GET() {
       .select()
       .from(dailyInsight)
       .orderBy(desc(dailyInsight.date))
+      .limit(1),
+    db
+      .select({ createdAt: weightLog.createdAt })
+      .from(weightLog)
+      .orderBy(desc(weightLog.createdAt))
+      .limit(1),
+    db
+      .select({ createdAt: whoopRecovery.createdAt })
+      .from(whoopRecovery)
+      .orderBy(desc(whoopRecovery.createdAt))
       .limit(1),
   ]);
 
@@ -41,5 +51,9 @@ export async function GET() {
     weight: weight.reverse(),
     correlations,
     latestInsight: insights[0] ?? null,
+    lastSync: {
+      autoExport: lastWeightSync[0]?.createdAt ?? null,
+      whoop: lastWhoopSync[0]?.createdAt ?? null,
+    },
   });
 }
