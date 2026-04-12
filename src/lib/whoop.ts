@@ -56,8 +56,11 @@ export async function exchangeWhoopCode(code: string): Promise<WhoopTokens> {
       }),
     }
   );
-  if (!res.ok) throw new Error(`WHOOP token exchange failed: ${res.status}`);
   const data = await res.json();
+  if (!res.ok) {
+    console.error("WHOOP token exchange failed:", res.status, JSON.stringify(data));
+    throw new Error(`WHOOP token exchange failed: ${res.status} ${JSON.stringify(data)}`);
+  }
   return {
     access_token: data.access_token,
     refresh_token: data.refresh_token,

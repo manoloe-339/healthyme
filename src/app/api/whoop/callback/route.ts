@@ -12,7 +12,15 @@ export async function GET(request: NextRequest) {
 
   const cookieStore = await cookies();
 
-  const tokens = await exchangeWhoopCode(code);
+  let tokens;
+  try {
+    tokens = await exchangeWhoopCode(code);
+  } catch (e) {
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : "Token exchange failed" },
+      { status: 500 }
+    );
+  }
 
   cookieStore.set("whoop_access_token", tokens.access_token, {
     httpOnly: true,
