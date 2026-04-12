@@ -5,7 +5,7 @@ import { z } from "zod";
 const insightSchema = z.object({
   weightTrend: z.string().describe("Description of weight trend over the window"),
   sleepCorrelation: z.string().describe("How sleep performance and duration correlate with weight changes"),
-  nutritionAssessment: z.string().describe("Assessment of calorie and protein intake relative to recomp goals").optional(),
+  nutritionCorrelation: z.string().describe("How macros (protein, carbs, fat, calories) correlate with WHOOP recovery, strain, and weight changes. Note patterns like high protein days vs recovery, calorie deficit vs strain tolerance, carb timing vs sleep quality.").optional(),
   workoutPrescription: z.string().describe("Recommended workout type and intensity for tomorrow"),
   insightText: z.string().describe("Full natural-language daily insight paragraph"),
 });
@@ -91,7 +91,16 @@ ${activityData.map((a) => `- ${a.date}: ${a.steps ? a.steps.toLocaleString() + "
 - If calories are logged and protein is below 150g, flag it
 - Explain WHY weight moved based on sleep/recovery/strain/nutrition correlation
 - If body fat % is trending, comment on whether fat loss vs muscle loss
-- Be direct, specific, and actionable`;
+- Be direct, specific, and actionable
+
+## Nutrition-Recovery Correlation Analysis
+For the nutritionCorrelation field, specifically analyze:
+- Do higher protein days precede better WHOOP recovery scores the next day?
+- Does calorie deficit size correlate with lower recovery or higher perceived strain?
+- Is there a pattern between carb intake and sleep quality/duration?
+- Does fat intake level affect next-day HRV?
+- Are there any visible macro ratios that coincide with weight drops vs stalls?
+- If nutrition is not logged, say "No nutrition data logged — start tracking meals to unlock macro-recovery correlations."`;
 
   const result = await generateText({
     model: anthropic("claude-sonnet-4-5-20250929"),

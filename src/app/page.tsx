@@ -44,6 +44,7 @@ interface Insight {
   date: string;
   weightTrend: string | null;
   sleepCorrelation: string | null;
+  nutritionCorrelation: string | null;
   workoutPrescription: string | null;
   insightText: string;
   recoveryScore: number | null;
@@ -516,6 +517,19 @@ export default function Dashboard() {
                 </div>
               )}
             </div>
+            {data.latestInsight.nutritionCorrelation && (
+              <>
+                <Separator />
+                <div>
+                  <p className="font-medium text-muted-foreground mb-2 text-sm">
+                    Macro-Recovery Correlations
+                  </p>
+                  <p className="text-sm leading-relaxed">
+                    {data.latestInsight.nutritionCorrelation}
+                  </p>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       )}
