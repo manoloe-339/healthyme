@@ -109,9 +109,9 @@ export function StatusGraphic({ weights, nutritionDates = [], todayProtein = nul
   });
 
   useEffect(() => {
-    const timer = setTimeout(() => setAnimatedPct(Math.min(pace.pctComplete, 100)), 100);
+    const timer = setTimeout(() => setAnimatedPct(1), 100); // trigger animation
     return () => clearTimeout(timer);
-  }, [pace.pctComplete]);
+  }, []);
 
   useEffect(() => {
     const stored = localStorage.getItem("healthyme_last_weight");
@@ -176,55 +176,76 @@ export function StatusGraphic({ weights, nutritionDates = [], todayProtein = nul
         </div>
       )}
 
-      {/* Milestone Gauge — large, unified */}
-      <div className="flex flex-col items-center mt-4">
-        <svg width="260" height="130" viewBox="0 0 260 130" className="w-full max-w-[280px]">
-          {/* Background arc */}
-          <path
-            d={`M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}`}
-            fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="12" strokeLinecap="round"
-          />
-          {/* Progress arc */}
-          <path
-            d={`M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}`}
-            fill="none" stroke={arcColor} strokeWidth="12" strokeLinecap="round"
-            strokeDasharray={circumference} strokeDashoffset={strokeOffset}
-            className="transition-all duration-1000 ease-out"
-          />
-          {/* Milestone dots on arc */}
-          {milestoneAngles.map((m, i) => {
-            const rad = (m.angle * Math.PI) / 180;
-            const x = cx + (radius) * Math.cos(rad);
-            const y = cy - (radius) * Math.sin(rad);
-            const hit = latest.weightLbs <= m.weight;
-            return <circle key={i} cx={x} cy={y} r="4.5" fill={hit ? "#4ade80" : "rgba(255,255,255,0.12)"} />;
-          })}
-          {/* Milestone label */}
-          <text x={cx} y={35} textAnchor="middle" fill="#71717a" fontSize="10" letterSpacing="2" fontWeight="500">
-            MILESTONE {completed + 1 <= total ? completed + 1 : total}
-          </text>
-          {/* Target weight */}
-          <text x={cx} y={70} textAnchor="middle" fill="#fafafa" fontSize="36" fontWeight="bold" fontFamily="monospace">
-            {nextMsData.weight}
-          </text>
-          {/* Date */}
-          <text x={cx} y={90} textAnchor="middle" fill="#71717a" fontSize="12">
-            {nextMsData.label}
-          </text>
-          {/* Percent */}
-          <text x={cx} y={108} textAnchor="middle" fill={arcColor} fontSize="11" fontWeight="bold">
-            {pace.pctComplete.toFixed(0)}% COMPLETE
-          </text>
-        </svg>
+      {/* Milestone Gauge — segment-based */}
+      {(() => {
+        // Find segment: previous milestone (or baseline) → next milestone
+        const allPoints = [
+          { weight: BASELINE.startWeight, label: "Start", date: BASELINE.startDate },
+          ...MILESTONES,
+        ];
+        const nextIdx = allPoints.findIndex((m) => latest.weightLbs > m.weight);
+        const segStart = nextIdx > 0 ? allPoints[nextIdx - 1].weight : BASELINE.startWeight;
+        const segEnd = nextMsData.weight;
+        const segRange = segStart - segEnd;
+        const segProgress = segRange > 0 ? Math.min(((segStart - latest.weightLbs) / segRange) * 100, 100) : 0;
+        const segOffset = circumference - (animatedPct > 0 ? segProgress : 0) / 100 * circumference;
 
-        {/* Below arc */}
-        <p className="text-sm text-zinc-400 font-mono -mt-1">
-          <span className="font-bold text-zinc-200">{pace.lbsToMilestone.toFixed(1)}</span> lbs to go
-        </p>
-        <p className="text-[10px] text-zinc-600 mt-1 mb-1">
-          {completed} of {total} milestones completed · {pace.pctComplete.toFixed(1)}% overall
-        </p>
-      </div>
+        // Target marker position (end of arc = right side)
+        const targetRad = 0; // 0 degrees = right side of arc
+        const targetX = cx + radius * Math.cos(targetRad);
+        const targetY = cy - radius * Math.sin(targetRad);
+
+        return (
+          <div className="flex flex-col items-center mt-4">
+            <svg width="260" height="140" viewBox="0 0 260 140" className="w-full max-w-[300px]">
+              {/* Background arc */}
+              <path
+                d={`M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}`}
+                fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="12" strokeLinecap="round"
+              />
+              {/* Progress arc — fills from left (current) toward right (target) */}
+              <path
+                d={`M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}`}
+                fill="none" stroke={arcColor} strokeWidth="12" strokeLinecap="round"
+                strokeDasharray={circumference}
+                strokeDashoffset={circumference - (segProgress / 100) * circumference}
+                className="transition-all duration-1000 ease-out"
+              />
+              {/* Target marker — gold dot at end of arc */}
+              <circle cx={targetX} cy={targetY} r="8" fill="#facc15" opacity="0.9" />
+              <circle cx={targetX} cy={targetY} r="4" fill="#fef08a" />
+              {/* Target weight label next to gold dot */}
+              <text x={targetX + 14} y={targetY + 5} textAnchor="start" fill="#facc15" fontSize="16" fontWeight="bold" fontFamily="monospace">
+                {segEnd}
+              </text>
+              {/* Start weight at left */}
+              <text x={cx - radius - 5} y={cy + 16} textAnchor="end" fill="#71717a" fontSize="11" fontFamily="monospace">
+                {Math.round(segStart)}
+              </text>
+              {/* Milestone label centered */}
+              <text x={cx} y={30} textAnchor="middle" fill="#71717a" fontSize="10" letterSpacing="2" fontWeight="500">
+                MILESTONE {completed + 1 <= total ? completed + 1 : total}
+              </text>
+              {/* Segment percent in center */}
+              <text x={cx} y={65} textAnchor="middle" fill="#fafafa" fontSize="28" fontWeight="bold" fontFamily="monospace">
+                {segProgress.toFixed(0)}%
+              </text>
+              {/* Date */}
+              <text x={cx} y={85} textAnchor="middle" fill="#71717a" fontSize="12">
+                {nextMsData.label}
+              </text>
+              {/* Lbs to go */}
+              <text x={cx} y={102} textAnchor="middle" fill={arcColor} fontSize="12" fontWeight="bold">
+                {pace.lbsToMilestone.toFixed(1)} lbs to go
+              </text>
+            </svg>
+
+            <p className="text-[10px] text-zinc-600 mt-0 mb-1">
+              {completed} of {total} milestones completed · {pace.pctComplete.toFixed(1)}% overall
+            </p>
+          </div>
+        );
+      })()}
     </div>
   );
 }
