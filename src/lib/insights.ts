@@ -9,7 +9,7 @@ const insightSchema = z.object({
   statusHeadline: z.string().describe("Exactly 6 words summarizing current status across recovery/sleep/pace. E.g. 'Recovery yellow. Sleep ok. Pace ahead.' or 'Red recovery. Sleep tanked. Off pace.'"),
   coachHeadline: z.string().describe("Exactly 6 words — the single most important coaching message. E.g. 'Under-fueling is killing your recovery score.' or 'Sleep debt erasing your calorie deficit.'"),
   workoutHeadline: z.string().describe("Exactly 6 words for today's workout prescription. E.g. '58% recovery. Row easy, not hard.' or 'Green light. Push the heavy compounds.'"),
-  detailHeadline: z.string().describe("Exactly 6 words highlighting a key data insight. E.g. 'Apr 11 refeed worked. Repeat it.' or 'Three nights under seven hours. Fix.'"),
+  detailHeadline: z.string().describe("Exactly 6 words highlighting a key data pattern. Do NOT use simple oldest-minus-newest subtraction for weight. Instead analyze the full 7-day pattern: overall direction, whether there was a stall or reversal mid-window, and the net change. E.g. 'Stalled mid-week then broke through.' or 'Three nights under seven hours. Fix.' or 'Steady drop, no stall. Keep going.'"),
 
   // Full analysis texts (hidden by default, shown on expand)
   correlationAnalysis: z.string().describe("Full analysis of how macros (protein, carbs, fat, calories) correlate with WHOOP recovery, strain, sleep, and weight changes. Include backward-looking diet impact and forward-looking predictions."),
