@@ -42,18 +42,27 @@ export function getWhoopAuthUrl() {
 }
 
 export async function exchangeWhoopCode(code: string): Promise<WhoopTokens> {
+  const body = new URLSearchParams({
+    grant_type: "authorization_code",
+    code,
+    client_id: process.env.WHOOP_CLIENT_ID!,
+    client_secret: process.env.WHOOP_CLIENT_SECRET!,
+    redirect_uri: process.env.WHOOP_REDIRECT_URI!,
+  });
+  console.log("Token exchange body params:", {
+    grant_type: "authorization_code",
+    code: code.substring(0, 10) + "...",
+    client_id: process.env.WHOOP_CLIENT_ID!,
+    client_secret_length: process.env.WHOOP_CLIENT_SECRET!.length,
+    redirect_uri: process.env.WHOOP_REDIRECT_URI!,
+  });
+
   const res = await fetch(
     "https://api.prod.whoop.com/oauth/oauth2/token",
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        grant_type: "authorization_code",
-        code,
-        client_id: process.env.WHOOP_CLIENT_ID!,
-        client_secret: process.env.WHOOP_CLIENT_SECRET!,
-        redirect_uri: process.env.WHOOP_REDIRECT_URI!,
-      }),
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body,
     }
   );
   const data = await res.json();
@@ -75,8 +84,8 @@ export async function refreshWhoopToken(
     "https://api.prod.whoop.com/oauth/oauth2/token",
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
         grant_type: "refresh_token",
         refresh_token: refreshToken,
         client_id: process.env.WHOOP_CLIENT_ID!,
