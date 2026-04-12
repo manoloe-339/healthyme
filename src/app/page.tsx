@@ -11,10 +11,11 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { WeightChart, RecoveryChart, SleepChart } from "@/components/charts";
+import { CorrelationChart } from "@/components/correlation-chart";
+
+// --- Types ---
 
 interface RecoveryEntry {
   date: string;
@@ -29,6 +30,23 @@ interface RecoveryEntry {
 interface WeightEntry {
   date: string;
   weightKg: number;
+  bodyFatPct?: number | null;
+  leanBodyMassKg?: number | null;
+}
+
+interface NutritionEntry {
+  date: string;
+  calories: number | null;
+  protein: number | null;
+  carbs: number | null;
+  totalFat: number | null;
+}
+
+interface ActivityEntry {
+  date: string;
+  steps: number | null;
+  activeEnergy: number | null;
+  exerciseMinutes: number | null;
 }
 
 interface Correlations {
@@ -42,36 +60,23 @@ interface Correlations {
 
 interface Insight {
   date: string;
+  correlationHeadline?: string;
+  statusHeadline?: string;
+  coachHeadline?: string;
+  workoutHeadline?: string;
+  detailHeadline?: string;
+  correlationAnalysis?: string;
+  coachSummary?: string;
+  coachAnalysis?: string;
+  workoutPrescription?: string;
+  workoutRationale?: string;
   weightTrend: string | null;
   sleepCorrelation: string | null;
-  nutritionCorrelation: string | null;
-  nutritionImpact: string | null;
-  workoutPrescription: string | null;
+  nutritionCorrelation?: string | null;
+  nutritionImpact?: string | null;
   insightText: string;
   recoveryScore: number | null;
   weightKg: number | null;
-}
-
-interface NutritionEntry {
-  date: string;
-  calories: number | null;
-  protein: number | null;
-  carbs: number | null;
-  totalFat: number | null;
-  fiber: number | null;
-}
-
-interface ActivityEntry {
-  date: string;
-  steps: number | null;
-  activeEnergy: number | null;
-  exerciseMinutes: number | null;
-  walkingDistance: number | null;
-}
-
-interface LastSync {
-  autoExport: string | null;
-  whoop: string | null;
 }
 
 interface DashboardData {
@@ -81,25 +86,13 @@ interface DashboardData {
   activity: ActivityEntry[];
   correlations: Correlations;
   latestInsight: Insight | null;
-  lastSync: LastSync;
+  lastSync: { autoExport: string | null; whoop: string | null };
 }
 
-function recoveryColor(score: number): string {
-  if (score >= 67) return "text-green-400";
-  if (score >= 34) return "text-yellow-400";
-  return "text-red-400";
-}
+// --- Helpers ---
 
-function recoveryBadge(score: number) {
-  if (score >= 67) return <Badge className="bg-green-900 text-green-300">Green</Badge>;
-  if (score >= 34) return <Badge className="bg-yellow-900 text-yellow-300">Yellow</Badge>;
-  return <Badge className="bg-red-900 text-red-300">Red</Badge>;
-}
-
-function formatCorrelation(r: number | null): string {
-  if (r === null) return "—";
-  const sign = r >= 0 ? "+" : "";
-  return `${sign}${r.toFixed(2)}`;
+function kgToLbs(kg: number): number {
+  return kg * 2.20462;
 }
 
 function timeAgo(dateStr: string | null): string {
@@ -110,12 +103,7 @@ function timeAgo(dateStr: string | null): string {
   if (mins < 60) return `${mins}m ago`;
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  return `${days}d ago`;
-}
-
-function kgToLbs(kg: number): number {
-  return kg * 2.20462;
+  return `${Math.floor(hrs / 24)}d ago`;
 }
 
 function formatDate(dateStr: string): string {
@@ -125,6 +113,65 @@ function formatDate(dateStr: string): string {
     day: "numeric",
   });
 }
+
+function recoveryColor(score: number): string {
+  if (score >= 70) return "text-green-400";
+  if (score >= 50) return "text-yellow-400";
+  return "text-red-400";
+}
+
+function statusColor(score: number, greenThreshold: number, yellowThreshold: number): string {
+  if (score >= greenThreshold) return "bg-green-900/50 border-green-700 text-green-300";
+  if (score >= yellowThreshold) return "bg-yellow-900/50 border-yellow-700 text-yellow-300";
+  return "bg-red-900/50 border-red-700 text-red-300";
+}
+
+// --- Expandable Section ---
+
+function ExpandableSection({
+  title,
+  headline,
+  children,
+  expandLabel = "Full Analysis",
+  defaultContent,
+}: {
+  title: string;
+  headline?: string;
+  children: React.ReactNode;
+  expandLabel?: string;
+  defaultContent?: React.ReactNode;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base font-medium text-white">{title}</CardTitle>
+        {headline && (
+          <CardDescription className="text-xs text-zinc-500 mt-0.5">
+            {headline}
+          </CardDescription>
+        )}
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {defaultContent}
+        {expanded && (
+          <div className="text-sm leading-relaxed text-zinc-300 whitespace-pre-line pt-2 border-t border-border/50">
+            {children}
+          </div>
+        )}
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+        >
+          {expanded ? "Collapse" : expandLabel}
+        </button>
+      </CardContent>
+    </Card>
+  );
+}
+
+// --- Main Dashboard ---
 
 export default function Dashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
@@ -137,8 +184,7 @@ export default function Dashboard() {
     try {
       const res = await fetch("/api/data");
       if (!res.ok) throw new Error("Failed to load data");
-      const json = await res.json();
-      setData(json);
+      setData(await res.json());
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load data");
@@ -147,25 +193,18 @@ export default function Dashboard() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   async function syncWhoop() {
     setSyncing(true);
     try {
       const res = await fetch("/api/whoop/sync", { method: "POST" });
-      if (res.status === 401) {
-        window.location.href = "/api/whoop/auth";
-        return;
-      }
+      if (res.status === 401) { window.location.href = "/api/whoop/auth"; return; }
       if (!res.ok) throw new Error("Sync failed");
       await fetchData();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Sync failed");
-    } finally {
-      setSyncing(false);
-    }
+    } finally { setSyncing(false); }
   }
 
   async function generateInsight() {
@@ -176,55 +215,64 @@ export default function Dashboard() {
       await fetchData();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Insight generation failed");
-    } finally {
-      setGenerating(false);
-    }
+    } finally { setGenerating(false); }
   }
 
   if (loading) {
     return (
-      <main className="mx-auto max-w-5xl p-4 sm:p-6 space-y-4 sm:space-y-6">
-        <Skeleton className="h-10 w-64" />
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-32" />
-          ))}
-        </div>
-        <Skeleton className="h-64" />
+      <main className="mx-auto max-w-3xl p-4 sm:p-6 space-y-4">
+        <Skeleton className="h-10 w-48" />
+        {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-32" />)}
       </main>
     );
   }
 
+  const insight = data?.latestInsight;
   const latestRecovery = data?.recovery?.[data.recovery.length - 1];
   const latestWeight = data?.weight?.[data.weight.length - 1];
   const correlations = data?.correlations;
 
+  // Build correlation chart data
+  const allDates = new Set<string>();
+  data?.recovery?.forEach((r) => allDates.add(r.date));
+  data?.weight?.forEach((w) => allDates.add(w.date));
+  data?.nutrition?.forEach((n) => allDates.add(n.date));
+
+  const recoveryByDate = new Map(data?.recovery?.map((r) => [r.date, r]) ?? []);
+  const weightByDate = new Map(data?.weight?.map((w) => [w.date, w]) ?? []);
+  const nutritionByDate = new Map(data?.nutrition?.map((n) => [n.date, n]) ?? []);
+
+  const chartData = Array.from(allDates)
+    .sort()
+    .map((date) => ({
+      date,
+      calories: nutritionByDate.get(date)?.calories ?? null,
+      protein: nutritionByDate.get(date)?.protein ?? null,
+      recovery: recoveryByDate.get(date)?.recoveryScore ?? null,
+      weightLbs: weightByDate.get(date) ? kgToLbs(weightByDate.get(date)!.weightKg) : null,
+    }));
+
+  // Milestone pace
+  const currentLbs = latestWeight ? kgToLbs(latestWeight.weightKg) : null;
+
   return (
-    <main className="mx-auto max-w-5xl p-4 sm:p-6 space-y-4 sm:space-y-6">
+    <main className="mx-auto max-w-3xl p-4 sm:p-6 space-y-4">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight font-sans">
-            healthyme
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Body recomposition dashboard
-          </p>
+          <h1 className="text-xl font-bold tracking-tight text-white">healthyme</h1>
           {data?.lastSync && (
-            <div className="flex gap-3 text-xs text-muted-foreground mt-1">
-              <span>Auto Export: {timeAgo(data.lastSync.autoExport)}</span>
-              <span>WHOOP: {timeAgo(data.lastSync.whoop)}</span>
-            </div>
+            <p className="text-xs text-zinc-600 mt-0.5">
+              Auto Export: {timeAgo(data.lastSync.autoExport)} · WHOOP: {timeAgo(data.lastSync.whoop)}
+            </p>
           )}
         </div>
         <div className="flex gap-2">
-          <Link href="/insights">
-            <Button variant="outline" size="sm">History</Button>
-          </Link>
-          <Button variant="secondary" size="sm" onClick={syncWhoop} disabled={syncing}>
-            {syncing ? "Syncing..." : "Sync WHOOP"}
+          <Link href="/insights"><Button variant="ghost" size="sm" className="text-xs">History</Button></Link>
+          <Button variant="secondary" size="sm" className="text-xs" onClick={syncWhoop} disabled={syncing}>
+            {syncing ? "Syncing..." : "Sync"}
           </Button>
-          <Button size="sm" onClick={generateInsight} disabled={generating}>
+          <Button size="sm" className="text-xs" onClick={generateInsight} disabled={generating}>
             {generating ? "Generating..." : "Generate Insight"}
           </Button>
         </div>
@@ -241,378 +289,231 @@ export default function Dashboard() {
         <Alert>
           <AlertTitle>Sleep Warning</AlertTitle>
           <AlertDescription>
-            {correlations.consecutiveLowSleep} consecutive days of low sleep
-            performance (&lt;70%). This is a metabolic risk factor for weight
-            loss stalling. Prioritize sleep tonight.
+            {correlations.consecutiveLowSleep} consecutive days below 65% sleep.
+            Metabolic risk — prioritize sleep tonight.
           </AlertDescription>
         </Alert>
       )}
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Today&apos;s Recovery</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {latestRecovery ? (
-              <div className="flex items-baseline gap-2">
-                <span
-                  className={`text-3xl font-mono font-bold ${recoveryColor(latestRecovery.recoveryScore)}`}
-                >
-                  {latestRecovery.recoveryScore}%
-                </span>
-                {recoveryBadge(latestRecovery.recoveryScore)}
-              </div>
-            ) : (
-              <p className="text-muted-foreground text-sm">No data — sync WHOOP</p>
-            )}
-            {latestRecovery?.hrvRmssd && (
-              <p className="text-xs text-muted-foreground mt-1">
-                HRV {latestRecovery.hrvRmssd.toFixed(0)} ms · RHR{" "}
-                {latestRecovery.restingHeartRate?.toFixed(0) ?? "—"} bpm
-              </p>
-            )}
-          </CardContent>
-        </Card>
+      {/* 1. CORRELATION CHART */}
+      <ExpandableSection
+        title="Correlation Chart"
+        headline={insight?.correlationHeadline ?? "Sync data and generate insights first."}
+        expandLabel="Full Analysis"
+        defaultContent={
+          chartData.length >= 2 ? <CorrelationChart data={chartData} /> : (
+            <p className="text-sm text-zinc-500">Need more data to show correlations.</p>
+          )
+        }
+      >
+        {insight?.correlationAnalysis ?? insight?.nutritionCorrelation ?? insight?.sleepCorrelation ?? "Generate an insight to see the full analysis."}
+      </ExpandableSection>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Latest Weight</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {latestWeight ? (
-              <div>
-                <span className="text-3xl font-mono font-bold">
-                  {kgToLbs(latestWeight.weightKg).toFixed(1)}
-                </span>
-                <span className="text-lg text-muted-foreground ml-1">lbs</span>
-                {data!.weight.length >= 2 && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {(() => {
-                      const prev = data!.weight[data!.weight.length - 2];
-                      const diff = kgToLbs(latestWeight.weightKg) - kgToLbs(prev.weightKg);
-                      const sign = diff >= 0 ? "+" : "";
-                      return `${sign}${diff.toFixed(1)} lbs from ${formatDate(prev.date)}`;
-                    })()}
-                  </p>
-                )}
-              </div>
-            ) : (
-              <p className="text-muted-foreground text-sm">No data</p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Correlations (rolling)</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {correlations ? (
-              <div className="space-y-1 font-mono text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Wt × Sleep</span>
-                  <span>{formatCorrelation(correlations.weightVsSleep)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Wt × Recovery</span>
-                  <span>{formatCorrelation(correlations.weightVsRecovery)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Wt × Strain</span>
-                  <span>{formatCorrelation(correlations.weightVsStrain)}</span>
-                </div>
-                <p className="text-xs text-muted-foreground pt-1">
-                  {correlations.windowDays}-day window
-                </p>
-              </div>
-            ) : (
-              <p className="text-muted-foreground text-sm">Need more data</p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {data?.weight && data.weight.length >= 2 && (
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Weight Trend</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <WeightChart data={data.weight} />
-            </CardContent>
-          </Card>
-        )}
-
-        {data?.recovery && data.recovery.length > 0 && (
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Recovery</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <RecoveryChart data={data.recovery} />
-            </CardContent>
-          </Card>
-        )}
-
-        {data?.recovery && data.recovery.some((r) => r.sleepPerformance !== null) && (
-          <Card className="lg:col-span-2">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Sleep Performance</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <SleepChart data={data.recovery} />
-            </CardContent>
-          </Card>
-        )}
-      </div>
-
-      {/* Diet Impact */}
-      {data?.latestInsight?.nutritionImpact && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Diet Impact Analysis</CardTitle>
-            <CardDescription>How what you ate affected you — and what to do today</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm leading-relaxed whitespace-pre-line">
-              {data.latestInsight.nutritionImpact}
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Body Composition */}
-      {data?.weight && data.weight.some((w) => 'bodyFatPct' in w) && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Body Composition</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto -mx-6 px-6">
-              <table className="w-full text-sm min-w-[400px]">
-                <thead>
-                  <tr className="border-b border-border text-muted-foreground">
-                    <th className="text-left py-2 pr-3 font-medium">Date</th>
-                    <th className="text-right py-2 px-3 font-medium">Weight</th>
-                    <th className="text-right py-2 px-3 font-medium">Body Fat</th>
-                    <th className="text-right py-2 pl-3 font-medium">Lean Mass</th>
-                  </tr>
-                </thead>
-                <tbody className="font-mono">
-                  {data.weight.map((w: WeightEntry & { bodyFatPct?: number | null; leanBodyMassKg?: number | null }) => (
-                    <tr key={w.date} className="border-b border-border/50">
-                      <td className="py-2 pr-3 whitespace-nowrap">{formatDate(w.date)}</td>
-                      <td className="text-right py-2 px-3">{kgToLbs(w.weightKg).toFixed(1)} lbs</td>
-                      <td className="text-right py-2 px-3">{w.bodyFatPct ? `${w.bodyFatPct.toFixed(1)}%` : "—"}</td>
-                      <td className="text-right py-2 pl-3">{w.leanBodyMassKg ? `${kgToLbs(w.leanBodyMassKg).toFixed(1)} lbs` : "—"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+      {/* 2. STATUS STRIP */}
+      <ExpandableSection
+        title="Status Strip"
+        headline={insight?.statusHeadline ?? "Sync WHOOP to see current status."}
+        expandLabel="Full Detail"
+        defaultContent={
+          <div className="grid grid-cols-3 gap-2">
+            <div className={`rounded-lg border px-3 py-2 text-center ${latestRecovery ? statusColor(latestRecovery.recoveryScore, 70, 50) : "bg-zinc-900 border-zinc-800 text-zinc-500"}`}>
+              <p className="text-2xl font-mono font-bold">{latestRecovery?.recoveryScore ?? "—"}%</p>
+              <p className="text-[10px] uppercase tracking-wider mt-0.5">Recovery</p>
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Nutrition & Activity */}
-      {((data?.nutrition?.length ?? 0) > 0 || (data?.activity?.length ?? 0) > 0) && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {(data?.nutrition?.length ?? 0) > 0 && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Nutrition</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto -mx-6 px-6">
-                  <table className="w-full text-sm min-w-[350px]">
-                    <thead>
-                      <tr className="border-b border-border text-muted-foreground">
-                        <th className="text-left py-2 pr-3 font-medium">Date</th>
-                        <th className="text-right py-2 px-3 font-medium">Cal</th>
-                        <th className="text-right py-2 px-3 font-medium">Protein</th>
-                        <th className="text-right py-2 px-3 font-medium">Carbs</th>
-                        <th className="text-right py-2 pl-3 font-medium">Fat</th>
-                      </tr>
-                    </thead>
-                    <tbody className="font-mono">
-                      {data!.nutrition.map((n) => (
-                        <tr key={n.date} className="border-b border-border/50">
-                          <td className="py-2 pr-3 whitespace-nowrap">{formatDate(n.date)}</td>
-                          <td className="text-right py-2 px-3">{n.calories ? Math.round(n.calories) : "—"}</td>
-                          <td className="text-right py-2 px-3">{n.protein ? `${Math.round(n.protein)}g` : "—"}</td>
-                          <td className="text-right py-2 px-3">{n.carbs ? `${Math.round(n.carbs)}g` : "—"}</td>
-                          <td className="text-right py-2 pl-3">{n.totalFat ? `${Math.round(n.totalFat)}g` : "—"}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
+            <div className={`rounded-lg border px-3 py-2 text-center ${latestRecovery?.sleepPerformance ? statusColor(latestRecovery.sleepPerformance, 75, 65) : "bg-zinc-900 border-zinc-800 text-zinc-500"}`}>
+              <p className="text-2xl font-mono font-bold">{latestRecovery?.sleepPerformance?.toFixed(0) ?? "—"}%</p>
+              <p className="text-[10px] uppercase tracking-wider mt-0.5">Sleep</p>
+            </div>
+            <div className={`rounded-lg border px-3 py-2 text-center ${currentLbs ? statusColor(currentLbs <= 209 ? 100 : currentLbs <= 215 ? 60 : 30, 70, 50) : "bg-zinc-900 border-zinc-800 text-zinc-500"}`}>
+              <p className="text-2xl font-mono font-bold">{currentLbs?.toFixed(1) ?? "—"}</p>
+              <p className="text-[10px] uppercase tracking-wider mt-0.5">Weight (lbs)</p>
+            </div>
+          </div>
+        }
+      >
+        <div className="space-y-2 text-sm">
+          {latestRecovery && (
+            <p>HRV: {latestRecovery.hrvRmssd?.toFixed(0) ?? "—"} ms · RHR: {latestRecovery.restingHeartRate?.toFixed(0) ?? "—"} bpm · Strain: {latestRecovery.strain?.toFixed(1) ?? "—"} · Sleep: {latestRecovery.sleepDurationMs ? (latestRecovery.sleepDurationMs / 3600000).toFixed(1) + "h" : "—"}</p>
           )}
-
-          {(data?.activity?.length ?? 0) > 0 && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Activity</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto -mx-6 px-6">
-                  <table className="w-full text-sm min-w-[350px]">
-                    <thead>
-                      <tr className="border-b border-border text-muted-foreground">
-                        <th className="text-left py-2 pr-3 font-medium">Date</th>
-                        <th className="text-right py-2 px-3 font-medium">Steps</th>
-                        <th className="text-right py-2 px-3 font-medium">Active Cal</th>
-                        <th className="text-right py-2 pl-3 font-medium">Exercise</th>
-                      </tr>
-                    </thead>
-                    <tbody className="font-mono">
-                      {data!.activity.map((a) => (
-                        <tr key={a.date} className="border-b border-border/50">
-                          <td className="py-2 pr-3 whitespace-nowrap">{formatDate(a.date)}</td>
-                          <td className="text-right py-2 px-3">{a.steps ? a.steps.toLocaleString() : "—"}</td>
-                          <td className="text-right py-2 px-3">{a.activeEnergy ? Math.round(a.activeEnergy) : "—"}</td>
-                          <td className="text-right py-2 pl-3">{a.exerciseMinutes ? `${Math.round(a.exerciseMinutes)}m` : "—"}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
+          {latestWeight && (
+            <p>Weight: {kgToLbs(latestWeight.weightKg).toFixed(1)} lbs{latestWeight.bodyFatPct ? ` · BF: ${latestWeight.bodyFatPct.toFixed(1)}%` : ""}{latestWeight.leanBodyMassKg ? ` · Lean: ${kgToLbs(latestWeight.leanBodyMassKg).toFixed(1)} lbs` : ""}</p>
+          )}
+          {correlations && (
+            <p className="font-mono text-xs text-zinc-500">
+              Correlations ({correlations.windowDays}d): Wt×Sleep {correlations.weightVsSleep?.toFixed(2) ?? "—"} · Wt×Recovery {correlations.weightVsRecovery?.toFixed(2) ?? "—"} · Wt×Strain {correlations.weightVsStrain?.toFixed(2) ?? "—"}
+            </p>
           )}
         </div>
-      )}
+      </ExpandableSection>
 
-      {/* Daily Insight */}
-      {data?.latestInsight && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">
-                Daily Insight — {formatDate(data.latestInsight.date)}
-              </CardTitle>
-              <Link href="/insights">
-                <Button variant="ghost" size="sm">View all</Button>
-              </Link>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm leading-relaxed">
-              {data.latestInsight.insightText}
-            </p>
-            <Separator />
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-              {data.latestInsight.weightTrend && (
-                <div>
-                  <p className="font-medium text-muted-foreground mb-1">
-                    Weight Trend
-                  </p>
-                  <p>{data.latestInsight.weightTrend}</p>
-                </div>
-              )}
-              {data.latestInsight.sleepCorrelation && (
-                <div>
-                  <p className="font-medium text-muted-foreground mb-1">
-                    Sleep Correlation
-                  </p>
-                  <p>{data.latestInsight.sleepCorrelation}</p>
-                </div>
-              )}
-              {data.latestInsight.workoutPrescription && (
-                <div>
-                  <p className="font-medium text-muted-foreground mb-1">
-                    Workout Rx
-                  </p>
-                  <p>{data.latestInsight.workoutPrescription}</p>
-                </div>
-              )}
-            </div>
-            {data.latestInsight.nutritionCorrelation && (
-              <>
-                <Separator />
-                <div>
-                  <p className="font-medium text-muted-foreground mb-2 text-sm">
-                    Macro-Recovery Correlations
-                  </p>
-                  <p className="text-sm leading-relaxed">
-                    {data.latestInsight.nutritionCorrelation}
-                  </p>
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Recent Data Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Recent Data</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {data?.recovery && data.recovery.length > 0 ? (
-            <div className="overflow-x-auto -mx-6 px-6">
-              <table className="w-full text-sm min-w-[500px]">
-                <thead>
-                  <tr className="border-b border-border text-muted-foreground">
-                    <th className="text-left py-2 pr-3 font-medium">Date</th>
-                    <th className="text-right py-2 px-3 font-medium">Rec</th>
-                    <th className="text-right py-2 px-3 font-medium">Sleep</th>
-                    <th className="text-right py-2 px-3 font-medium">Hrs</th>
-                    <th className="text-right py-2 px-3 font-medium">HRV</th>
-                    <th className="text-right py-2 px-3 font-medium">Strain</th>
-                    <th className="text-right py-2 pl-3 font-medium">Weight</th>
-                  </tr>
-                </thead>
-                <tbody className="font-mono">
-                  {data.recovery.map((r) => {
-                    const w = data.weight.find((w) => w.date === r.date);
-                    return (
-                      <tr key={r.date} className="border-b border-border/50">
-                        <td className="py-2 pr-3 whitespace-nowrap">{formatDate(r.date)}</td>
-                        <td
-                          className={`text-right py-2 px-3 ${recoveryColor(r.recoveryScore)}`}
-                        >
-                          {r.recoveryScore}%
-                        </td>
-                        <td className="text-right py-2 px-3">
-                          {r.sleepPerformance
-                            ? `${r.sleepPerformance.toFixed(0)}%`
-                            : "—"}
-                        </td>
-                        <td className="text-right py-2 px-3">
-                          {r.sleepDurationMs
-                            ? `${(r.sleepDurationMs / 3600000).toFixed(1)}h`
-                            : "—"}
-                        </td>
-                        <td className="text-right py-2 px-3">
-                          {r.hrvRmssd ? `${r.hrvRmssd.toFixed(0)}` : "—"}
-                        </td>
-                        <td className="text-right py-2 px-3">
-                          {r.strain ? r.strain.toFixed(1) : "—"}
-                        </td>
-                        <td className="text-right py-2 pl-3">
-                          {w ? `${kgToLbs(w.weightKg).toFixed(1)}` : "—"}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+      {/* 3. COACH CARD */}
+      <ExpandableSection
+        title="Coach Card"
+        headline={insight?.coachHeadline ?? "Generate insight for coaching."}
+        expandLabel="Full Analysis"
+        defaultContent={
+          insight?.coachSummary ? (
+            <p className="text-sm text-zinc-300">{insight.coachSummary}</p>
           ) : (
-            <p className="text-muted-foreground text-sm">
-              No data yet. Connect WHOOP and sync to get started.
-            </p>
+            <p className="text-sm text-zinc-500">Click &quot;Generate Insight&quot; to get your daily coaching.</p>
+          )
+        }
+      >
+        {insight?.coachAnalysis ?? insight?.insightText ?? "No analysis yet."}
+      </ExpandableSection>
+
+      {/* 4. WORKOUT PRESCRIPTION */}
+      <ExpandableSection
+        title="Workout Prescription"
+        headline={insight?.workoutHeadline ?? "Generate insight for workout Rx."}
+        expandLabel="Full Detail"
+        defaultContent={
+          insight?.workoutPrescription ? (
+            <p className="text-sm font-medium text-white">{insight.workoutPrescription}</p>
+          ) : (
+            <p className="text-sm text-zinc-500">Sync WHOOP and generate insight for a prescription.</p>
+          )
+        }
+      >
+        {insight?.workoutRationale ?? "No workout reasoning available yet."}
+      </ExpandableSection>
+
+      {/* 5. DETAIL TABLES */}
+      <ExpandableSection
+        title="Detail Tables"
+        headline={insight?.detailHeadline ?? "Expand to see all data."}
+        expandLabel="Show Tables"
+        defaultContent={null}
+      >
+        <div className="space-y-6">
+          {/* Recent Data */}
+          {data?.recovery && data.recovery.length > 0 && (
+            <div>
+              <p className="text-xs font-medium text-zinc-400 mb-2 uppercase tracking-wider">Recovery & Sleep</p>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs min-w-[500px]">
+                  <thead>
+                    <tr className="border-b border-border text-zinc-500">
+                      <th className="text-left py-1.5 pr-2 font-medium">Date</th>
+                      <th className="text-right py-1.5 px-2 font-medium">Rec</th>
+                      <th className="text-right py-1.5 px-2 font-medium">Sleep</th>
+                      <th className="text-right py-1.5 px-2 font-medium">Hrs</th>
+                      <th className="text-right py-1.5 px-2 font-medium">HRV</th>
+                      <th className="text-right py-1.5 px-2 font-medium">Strain</th>
+                      <th className="text-right py-1.5 pl-2 font-medium">Weight</th>
+                    </tr>
+                  </thead>
+                  <tbody className="font-mono">
+                    {data.recovery.map((r) => {
+                      const w = data.weight.find((w) => w.date === r.date);
+                      return (
+                        <tr key={r.date} className="border-b border-border/30">
+                          <td className="py-1.5 pr-2 whitespace-nowrap">{formatDate(r.date)}</td>
+                          <td className={`text-right py-1.5 px-2 ${recoveryColor(r.recoveryScore)}`}>{r.recoveryScore}%</td>
+                          <td className="text-right py-1.5 px-2">{r.sleepPerformance ? `${r.sleepPerformance.toFixed(0)}%` : "—"}</td>
+                          <td className="text-right py-1.5 px-2">{r.sleepDurationMs ? `${(r.sleepDurationMs / 3600000).toFixed(1)}h` : "—"}</td>
+                          <td className="text-right py-1.5 px-2">{r.hrvRmssd ? r.hrvRmssd.toFixed(0) : "—"}</td>
+                          <td className="text-right py-1.5 px-2">{r.strain ? r.strain.toFixed(1) : "—"}</td>
+                          <td className="text-right py-1.5 pl-2">{w ? `${kgToLbs(w.weightKg).toFixed(1)}` : "—"}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           )}
-        </CardContent>
-      </Card>
+
+          {/* Body Composition */}
+          {data?.weight && data.weight.some((w) => w.bodyFatPct) && (
+            <div>
+              <p className="text-xs font-medium text-zinc-400 mb-2 uppercase tracking-wider">Body Composition</p>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs min-w-[350px]">
+                  <thead>
+                    <tr className="border-b border-border text-zinc-500">
+                      <th className="text-left py-1.5 pr-2 font-medium">Date</th>
+                      <th className="text-right py-1.5 px-2 font-medium">Weight</th>
+                      <th className="text-right py-1.5 px-2 font-medium">Body Fat</th>
+                      <th className="text-right py-1.5 pl-2 font-medium">Lean Mass</th>
+                    </tr>
+                  </thead>
+                  <tbody className="font-mono">
+                    {data.weight.map((w) => (
+                      <tr key={w.date} className="border-b border-border/30">
+                        <td className="py-1.5 pr-2 whitespace-nowrap">{formatDate(w.date)}</td>
+                        <td className="text-right py-1.5 px-2">{kgToLbs(w.weightKg).toFixed(1)} lbs</td>
+                        <td className="text-right py-1.5 px-2">{w.bodyFatPct ? `${w.bodyFatPct.toFixed(1)}%` : "—"}</td>
+                        <td className="text-right py-1.5 pl-2">{w.leanBodyMassKg ? `${kgToLbs(w.leanBodyMassKg).toFixed(1)} lbs` : "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Nutrition */}
+          {(data?.nutrition?.length ?? 0) > 0 && (
+            <div>
+              <p className="text-xs font-medium text-zinc-400 mb-2 uppercase tracking-wider">Nutrition</p>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs min-w-[350px]">
+                  <thead>
+                    <tr className="border-b border-border text-zinc-500">
+                      <th className="text-left py-1.5 pr-2 font-medium">Date</th>
+                      <th className="text-right py-1.5 px-2 font-medium">Cal</th>
+                      <th className="text-right py-1.5 px-2 font-medium">Protein</th>
+                      <th className="text-right py-1.5 px-2 font-medium">Carbs</th>
+                      <th className="text-right py-1.5 pl-2 font-medium">Fat</th>
+                    </tr>
+                  </thead>
+                  <tbody className="font-mono">
+                    {data!.nutrition.map((n) => (
+                      <tr key={n.date} className="border-b border-border/30">
+                        <td className="py-1.5 pr-2 whitespace-nowrap">{formatDate(n.date)}</td>
+                        <td className="text-right py-1.5 px-2">{n.calories ? Math.round(n.calories) : "—"}</td>
+                        <td className="text-right py-1.5 px-2">{n.protein ? `${Math.round(n.protein)}g` : "—"}</td>
+                        <td className="text-right py-1.5 px-2">{n.carbs ? `${Math.round(n.carbs)}g` : "—"}</td>
+                        <td className="text-right py-1.5 pl-2">{n.totalFat ? `${Math.round(n.totalFat)}g` : "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Activity */}
+          {(data?.activity?.length ?? 0) > 0 && (
+            <div>
+              <p className="text-xs font-medium text-zinc-400 mb-2 uppercase tracking-wider">Activity</p>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs min-w-[300px]">
+                  <thead>
+                    <tr className="border-b border-border text-zinc-500">
+                      <th className="text-left py-1.5 pr-2 font-medium">Date</th>
+                      <th className="text-right py-1.5 px-2 font-medium">Steps</th>
+                      <th className="text-right py-1.5 px-2 font-medium">Active Cal</th>
+                      <th className="text-right py-1.5 pl-2 font-medium">Exercise</th>
+                    </tr>
+                  </thead>
+                  <tbody className="font-mono">
+                    {data!.activity.map((a) => (
+                      <tr key={a.date} className="border-b border-border/30">
+                        <td className="py-1.5 pr-2 whitespace-nowrap">{formatDate(a.date)}</td>
+                        <td className="text-right py-1.5 px-2">{a.steps ? a.steps.toLocaleString() : "—"}</td>
+                        <td className="text-right py-1.5 px-2">{a.activeEnergy ? Math.round(a.activeEnergy) : "—"}</td>
+                        <td className="text-right py-1.5 pl-2">{a.exerciseMinutes ? `${Math.round(a.exerciseMinutes)}m` : "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      </ExpandableSection>
     </main>
   );
 }

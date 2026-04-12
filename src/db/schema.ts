@@ -64,6 +64,18 @@ export const whoopTokens = pgTable("whoop_tokens", {
 export const dailyInsight = pgTable("daily_insight", {
   id: serial("id").primaryKey(),
   date: date("date").notNull().unique(),
+  // Headlines
+  correlationHeadline: text("correlation_headline"),
+  statusHeadline: text("status_headline"),
+  coachHeadline: text("coach_headline"),
+  workoutHeadline: text("workout_headline"),
+  detailHeadline: text("detail_headline"),
+  // Analysis
+  correlationAnalysis: text("correlation_analysis"),
+  coachSummary: text("coach_summary"),
+  coachAnalysis: text("coach_analysis"),
+  workoutRationale: text("workout_rationale"),
+  // Legacy
   weightTrend: text("weight_trend"),
   sleepCorrelation: text("sleep_correlation"),
   nutritionCorrelation: text("nutrition_correlation"),

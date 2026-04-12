@@ -4,11 +4,23 @@ import { z } from "zod";
 import userContext from "./user-context.json";
 
 const insightSchema = z.object({
+  // Six-word headline summaries for each dashboard section
+  correlationHeadline: z.string().describe("Exactly 6 words summarizing the key nutrition-recovery correlation pattern. E.g. 'Carbs up, recovery follows. Every time.' or 'Low protein tanking your recovery scores.'"),
+  statusHeadline: z.string().describe("Exactly 6 words summarizing current status across recovery/sleep/pace. E.g. 'Recovery yellow. Sleep ok. Pace ahead.' or 'Red recovery. Sleep tanked. Off pace.'"),
+  coachHeadline: z.string().describe("Exactly 6 words — the single most important coaching message. E.g. 'Under-fueling is killing your recovery score.' or 'Sleep debt erasing your calorie deficit.'"),
+  workoutHeadline: z.string().describe("Exactly 6 words for today's workout prescription. E.g. '58% recovery. Row easy, not hard.' or 'Green light. Push the heavy compounds.'"),
+  detailHeadline: z.string().describe("Exactly 6 words highlighting a key data insight. E.g. 'Apr 11 refeed worked. Repeat it.' or 'Three nights under seven hours. Fix.'"),
+
+  // Full analysis texts (hidden by default, shown on expand)
+  correlationAnalysis: z.string().describe("Full analysis of how macros (protein, carbs, fat, calories) correlate with WHOOP recovery, strain, sleep, and weight changes. Include backward-looking diet impact and forward-looking predictions."),
+  coachSummary: z.string().describe("Two sentences only: what the pattern shows, and one specific action for today. Direct, no hedging."),
+  coachAnalysis: z.string().describe("Full coaching analysis including weight trend, sleep correlation, nutrition impact, milestone tracking, and whether current pace matches the protocol."),
+  workoutPrescription: z.string().describe("One bold line: activity type and intensity. E.g. 'Rowing — steady state 30 min at 2:10 split' or 'Gym — heavy compounds, 4x5 at RPE 8'"),
+  workoutRationale: z.string().describe("Full reasoning for the workout prescription based on recovery, sleep, strain, nutrition, and where we are in the training split."),
+
+  // Legacy fields for DB storage
   weightTrend: z.string().describe("Description of weight trend over the window"),
   sleepCorrelation: z.string().describe("How sleep performance and duration correlate with weight changes"),
-  nutritionCorrelation: z.string().describe("How macros (protein, carbs, fat, calories) correlate with WHOOP recovery, strain, and weight changes. Note patterns like high protein days vs recovery, calorie deficit vs strain tolerance, carb timing vs sleep quality.").optional(),
-  nutritionImpact: z.string().describe("Two-part analysis of diet: (1) BACKWARD-LOOKING: how what was eaten in the last few days likely impacted sleep quality, recovery scores, energy levels, and how the body feels today. (2) FORWARD-LOOKING: based on current nutrition patterns, what to expect for tonight's sleep, tomorrow's recovery, and exercise performance — and specific dietary actions to take today (what to eat, how much protein, whether to increase carbs before a workout, etc).").optional(),
-  workoutPrescription: z.string().describe("Recommended workout type and intensity for tomorrow"),
   insightText: z.string().describe("Full natural-language daily insight paragraph"),
 });
 
