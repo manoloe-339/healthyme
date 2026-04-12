@@ -1,38 +1,20 @@
 import { NextResponse } from "next/server";
 import { getDb } from "@/db";
-import { whoopRecovery, weightLog, dailyInsight } from "@/db/schema";
+import { whoopRecovery, weightLog, dailyInsight, dailyNutrition, dailyActivity } from "@/db/schema";
 import { desc } from "drizzle-orm";
 import { computeCorrelations } from "@/lib/correlation";
 
 export async function GET() {
   const db = getDb();
 
-  const [recovery, weight, insights, lastWeightSync, lastWhoopSync] = await Promise.all([
-    db
-      .select()
-      .from(whoopRecovery)
-      .orderBy(desc(whoopRecovery.date))
-      .limit(7),
-    db
-      .select()
-      .from(weightLog)
-      .orderBy(desc(weightLog.date))
-      .limit(7),
-    db
-      .select()
-      .from(dailyInsight)
-      .orderBy(desc(dailyInsight.date))
-      .limit(1),
-    db
-      .select({ createdAt: weightLog.createdAt })
-      .from(weightLog)
-      .orderBy(desc(weightLog.createdAt))
-      .limit(1),
-    db
-      .select({ createdAt: whoopRecovery.createdAt })
-      .from(whoopRecovery)
-      .orderBy(desc(whoopRecovery.createdAt))
-      .limit(1),
+  const [recovery, weight, insights, nutrition, activity, lastWeightSync, lastWhoopSync] = await Promise.all([
+    db.select().from(whoopRecovery).orderBy(desc(whoopRecovery.date)).limit(7),
+    db.select().from(weightLog).orderBy(desc(weightLog.date)).limit(7),
+    db.select().from(dailyInsight).orderBy(desc(dailyInsight.date)).limit(1),
+    db.select().from(dailyNutrition).orderBy(desc(dailyNutrition.date)).limit(7),
+    db.select().from(dailyActivity).orderBy(desc(dailyActivity.date)).limit(7),
+    db.select({ createdAt: weightLog.createdAt }).from(weightLog).orderBy(desc(weightLog.createdAt)).limit(1),
+    db.select({ createdAt: whoopRecovery.createdAt }).from(whoopRecovery).orderBy(desc(whoopRecovery.createdAt)).limit(1),
   ]);
 
   const weightByDate = new Map(weight.map((w) => [w.date, w.weightKg]));
@@ -49,6 +31,8 @@ export async function GET() {
   return NextResponse.json({
     recovery: recovery.reverse(),
     weight: weight.reverse(),
+    nutrition: nutrition.reverse(),
+    activity: activity.reverse(),
     correlations,
     latestInsight: insights[0] ?? null,
     lastSync: {

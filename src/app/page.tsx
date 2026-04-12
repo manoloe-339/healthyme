@@ -49,6 +49,23 @@ interface Insight {
   weightKg: number | null;
 }
 
+interface NutritionEntry {
+  date: string;
+  calories: number | null;
+  protein: number | null;
+  carbs: number | null;
+  totalFat: number | null;
+  fiber: number | null;
+}
+
+interface ActivityEntry {
+  date: string;
+  steps: number | null;
+  activeEnergy: number | null;
+  exerciseMinutes: number | null;
+  walkingDistance: number | null;
+}
+
 interface LastSync {
   autoExport: string | null;
   whoop: string | null;
@@ -57,6 +74,8 @@ interface LastSync {
 interface DashboardData {
   recovery: RecoveryEntry[];
   weight: WeightEntry[];
+  nutrition: NutritionEntry[];
+  activity: ActivityEntry[];
   correlations: Correlations;
   latestInsight: Insight | null;
   lastSync: LastSync;
@@ -347,6 +366,110 @@ export default function Dashboard() {
           </Card>
         )}
       </div>
+
+      {/* Body Composition */}
+      {data?.weight && data.weight.some((w) => 'bodyFatPct' in w) && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Body Composition</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto -mx-6 px-6">
+              <table className="w-full text-sm min-w-[400px]">
+                <thead>
+                  <tr className="border-b border-border text-muted-foreground">
+                    <th className="text-left py-2 pr-3 font-medium">Date</th>
+                    <th className="text-right py-2 px-3 font-medium">Weight</th>
+                    <th className="text-right py-2 px-3 font-medium">Body Fat</th>
+                    <th className="text-right py-2 pl-3 font-medium">Lean Mass</th>
+                  </tr>
+                </thead>
+                <tbody className="font-mono">
+                  {data.weight.map((w: WeightEntry & { bodyFatPct?: number | null; leanBodyMassKg?: number | null }) => (
+                    <tr key={w.date} className="border-b border-border/50">
+                      <td className="py-2 pr-3 whitespace-nowrap">{formatDate(w.date)}</td>
+                      <td className="text-right py-2 px-3">{kgToLbs(w.weightKg).toFixed(1)} lbs</td>
+                      <td className="text-right py-2 px-3">{w.bodyFatPct ? `${w.bodyFatPct.toFixed(1)}%` : "—"}</td>
+                      <td className="text-right py-2 pl-3">{w.leanBodyMassKg ? `${kgToLbs(w.leanBodyMassKg).toFixed(1)} lbs` : "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Nutrition & Activity */}
+      {((data?.nutrition?.length ?? 0) > 0 || (data?.activity?.length ?? 0) > 0) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {(data?.nutrition?.length ?? 0) > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Nutrition</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto -mx-6 px-6">
+                  <table className="w-full text-sm min-w-[350px]">
+                    <thead>
+                      <tr className="border-b border-border text-muted-foreground">
+                        <th className="text-left py-2 pr-3 font-medium">Date</th>
+                        <th className="text-right py-2 px-3 font-medium">Cal</th>
+                        <th className="text-right py-2 px-3 font-medium">Protein</th>
+                        <th className="text-right py-2 px-3 font-medium">Carbs</th>
+                        <th className="text-right py-2 pl-3 font-medium">Fat</th>
+                      </tr>
+                    </thead>
+                    <tbody className="font-mono">
+                      {data!.nutrition.map((n) => (
+                        <tr key={n.date} className="border-b border-border/50">
+                          <td className="py-2 pr-3 whitespace-nowrap">{formatDate(n.date)}</td>
+                          <td className="text-right py-2 px-3">{n.calories ? Math.round(n.calories) : "—"}</td>
+                          <td className="text-right py-2 px-3">{n.protein ? `${Math.round(n.protein)}g` : "—"}</td>
+                          <td className="text-right py-2 px-3">{n.carbs ? `${Math.round(n.carbs)}g` : "—"}</td>
+                          <td className="text-right py-2 pl-3">{n.totalFat ? `${Math.round(n.totalFat)}g` : "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {(data?.activity?.length ?? 0) > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Activity</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto -mx-6 px-6">
+                  <table className="w-full text-sm min-w-[350px]">
+                    <thead>
+                      <tr className="border-b border-border text-muted-foreground">
+                        <th className="text-left py-2 pr-3 font-medium">Date</th>
+                        <th className="text-right py-2 px-3 font-medium">Steps</th>
+                        <th className="text-right py-2 px-3 font-medium">Active Cal</th>
+                        <th className="text-right py-2 pl-3 font-medium">Exercise</th>
+                      </tr>
+                    </thead>
+                    <tbody className="font-mono">
+                      {data!.activity.map((a) => (
+                        <tr key={a.date} className="border-b border-border/50">
+                          <td className="py-2 pr-3 whitespace-nowrap">{formatDate(a.date)}</td>
+                          <td className="text-right py-2 px-3">{a.steps ? a.steps.toLocaleString() : "—"}</td>
+                          <td className="text-right py-2 px-3">{a.activeEnergy ? Math.round(a.activeEnergy) : "—"}</td>
+                          <td className="text-right py-2 pl-3">{a.exerciseMinutes ? `${Math.round(a.exerciseMinutes)}m` : "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
 
       {/* Daily Insight */}
       {data?.latestInsight && (
