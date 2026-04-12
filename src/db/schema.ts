@@ -64,6 +64,13 @@ export const whoopTokens = pgTable("whoop_tokens", {
 export const dailyInsight = pgTable("daily_insight", {
   id: serial("id").primaryKey(),
   date: date("date").notNull().unique(),
+  // Today's Orders
+  orderStatus: text("order_status"),
+  orderEat: text("order_eat"),
+  orderDrink: text("order_drink"),
+  orderExercise: text("order_exercise"),
+  orderSleep: text("order_sleep"),
+  orderWatch: text("order_watch"),
   // Headlines
   correlationHeadline: text("correlation_headline"),
   statusHeadline: text("status_headline"),

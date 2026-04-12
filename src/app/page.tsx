@@ -60,6 +60,12 @@ interface Correlations {
 
 interface Insight {
   date: string;
+  orderStatus?: string;
+  orderEat?: string;
+  orderDrink?: string;
+  orderExercise?: string;
+  orderSleep?: string;
+  orderWatch?: string;
   correlationHeadline?: string;
   statusHeadline?: string;
   coachHeadline?: string;
@@ -307,6 +313,40 @@ export default function Dashboard() {
             Metabolic risk — prioritize sleep tonight.
           </AlertDescription>
         </Alert>
+      )}
+
+      {/* 0. TODAY'S ORDERS */}
+      {insight?.orderStatus && (
+        <Card className="border-zinc-700">
+          <CardHeader className="pb-1">
+            <CardTitle className="text-base font-medium text-white">Today&apos;s Orders</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1.5">
+            <p className="text-sm text-zinc-200 font-medium">{insight.orderStatus}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-sm pt-1">
+              <div className="flex gap-2">
+                <span className="text-zinc-500 w-14 shrink-0">Eat</span>
+                <span className="text-zinc-300">{insight.orderEat}</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-zinc-500 w-14 shrink-0">Drink</span>
+                <span className="text-zinc-300">{insight.orderDrink}</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-zinc-500 w-14 shrink-0">Exercise</span>
+                <span className="text-zinc-300">{insight.orderExercise}</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-zinc-500 w-14 shrink-0">Sleep</span>
+                <span className="text-zinc-300">{insight.orderSleep}</span>
+              </div>
+              <div className="flex gap-2 sm:col-span-2">
+                <span className="text-zinc-500 w-14 shrink-0">Watch</span>
+                <span className="text-yellow-400">{insight.orderWatch}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* 1. CORRELATION CHART */}

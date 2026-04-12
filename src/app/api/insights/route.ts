@@ -63,6 +63,12 @@ export async function POST() {
     .insert(dailyInsight)
     .values({
       date: today,
+      orderStatus: insight.orderStatus ?? null,
+      orderEat: insight.orderEat ?? null,
+      orderDrink: insight.orderDrink ?? null,
+      orderExercise: insight.orderExercise ?? null,
+      orderSleep: insight.orderSleep ?? null,
+      orderWatch: insight.orderWatch ?? null,
       correlationHeadline: insight.correlationHeadline ?? null,
       statusHeadline: insight.statusHeadline ?? null,
       coachHeadline: insight.coachHeadline ?? null,
@@ -83,6 +89,12 @@ export async function POST() {
     .onConflictDoUpdate({
       target: dailyInsight.date,
       set: {
+        orderStatus: sql`excluded.order_status`,
+        orderEat: sql`excluded.order_eat`,
+        orderDrink: sql`excluded.order_drink`,
+        orderExercise: sql`excluded.order_exercise`,
+        orderSleep: sql`excluded.order_sleep`,
+        orderWatch: sql`excluded.order_watch`,
         correlationHeadline: sql`excluded.correlation_headline`,
         statusHeadline: sql`excluded.status_headline`,
         coachHeadline: sql`excluded.coach_headline`,

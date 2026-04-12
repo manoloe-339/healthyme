@@ -4,6 +4,14 @@ import { z } from "zod";
 import userContext from "./user-context.json";
 
 const insightSchema = z.object({
+  // Today's Orders — six prescriptive lines, each under 6 words
+  orderStatus: z.string().describe("Under 6 words: overall status for today based on all data. E.g. 'On track. Don't get complacent.' or 'Recovery tanked. Damage control today.' or 'Crushing it. Stay the course.'"),
+  orderEat: z.string().describe("Under 6 words: what to eat today. Must be specific and actionable against the OMAD protocol. E.g. 'Hit 130g protein. Add tuna.' or 'Refeed day. Carbs up to 200g.' or '1800 kcal. Prioritize chicken, eggs.'"),
+  orderDrink: z.string().describe("Under 6 words: hydration order. E.g. 'LMNT before noon. Water all day.' or '3L minimum. Add extra electrolytes.' or 'Creatine with morning water. Done.'"),
+  orderExercise: z.string().describe("Under 6 words: today's exercise order based on recovery score and training split. E.g. 'Rowing intervals. 8x500m hard.' or 'Heavy gym day. Squat focus.' or 'Active recovery only. Walk.'"),
+  orderSleep: z.string().describe("Under 6 words: sleep order for tonight. E.g. 'In bed by 11pm sharp.' or 'Seven point five hours minimum.' or 'Sleep debt critical. Prioritize tonight.'"),
+  orderWatch: z.string().describe("Under 6 words: the one thing to watch/be careful about today. E.g. 'Don't skip protein in OMAD.' or 'Recovery low — don't push strain.' or 'Three day stall coming. Stay calm.'"),
+
   // Six-word headline summaries for each dashboard section
   correlationHeadline: z.string().describe("Exactly 6 words summarizing the key nutrition-recovery correlation pattern. E.g. 'Carbs up, recovery follows. Every time.' or 'Low protein tanking your recovery scores.'"),
   statusHeadline: z.string().describe("Exactly 6 words summarizing current status across recovery/sleep/pace. E.g. 'Recovery yellow. Sleep ok. Pace ahead.' or 'Red recovery. Sleep tanked. Off pace.'"),
