@@ -3,7 +3,6 @@ import { getDb } from "@/db";
 import { whoopRecovery, weightLog, dailyInsight, dailyNutrition, dailyActivity } from "@/db/schema";
 import { desc, sql } from "drizzle-orm";
 import { generateDailyInsight } from "@/lib/insights";
-import { fillNutritionGaps } from "@/lib/nutrition-fill";
 
 export async function POST() {
   const db = getDb();
@@ -40,24 +39,14 @@ export async function POST() {
       leanBodyMassKg: w.leanBodyMassKg,
     })),
     nutritionData: (() => {
-      const allDates = new Set<string>();
-      recentRecovery.forEach((r) => allDates.add(r.date));
-      recentWeight.forEach((w) => allDates.add(w.date));
-      const filled = fillNutritionGaps(
-        recentNutrition.map((n) => ({
-          date: n.date, calories: n.calories, protein: n.protein,
-          carbs: n.carbs, totalFat: n.totalFat, fiber: n.fiber, sugar: n.sugar,
-        })),
-        Array.from(allDates).sort()
-      );
-      return filled.length > 0
-        ? filled.map((n) => ({
+      const logged = recentNutrition.filter((n) => n.calories && n.calories > 0);
+      return logged.length > 0
+        ? logged.map((n) => ({
             date: n.date,
             calories: n.calories,
             protein: n.protein,
             carbs: n.carbs,
             totalFat: n.totalFat,
-            estimated: n.estimated,
           }))
         : undefined;
     })(),

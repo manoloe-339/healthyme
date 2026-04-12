@@ -55,7 +55,6 @@ interface InsightInput {
     protein: number | null;
     carbs: number | null;
     totalFat: number | null;
-    estimated?: boolean;
   }[];
   activityData?: {
     date: string;
@@ -127,13 +126,14 @@ ${weightData.map((w) => `- ${w.date}: ${kgToLbs(w.weightKg)} lbs${w.bodyFatPct ?
   if (nutritionData && nutritionData.length > 0) {
     prompt += `
 
-### Nutrition (from Apple Health)
-${nutritionData.map((n) => `- ${n.date}: ${n.calories ? Math.round(n.calories) + " kcal" : "not logged"}, Protein ${n.protein ? Math.round(n.protein) + "g" : "N/A"}, Carbs ${n.carbs ? Math.round(n.carbs) + "g" : "N/A"}, Fat ${n.totalFat ? Math.round(n.totalFat) + "g" : "N/A"}${n.estimated ? " (estimated from median of logged days)" : ""}`).join("\n")}`;
+### Nutrition (logged days only)
+IMPORTANT: Only days with actual logged meals are shown below. Missing days mean no data was recorded — the client still ate on those days (OMAD protocol). Base all nutrition analysis ONLY on the logged days shown. Do NOT interpret missing days as fasting or zero intake.
+${nutritionData.map((n) => `- ${n.date}: ${n.calories ? Math.round(n.calories) + " kcal" : "—"}, Protein ${n.protein ? Math.round(n.protein) + "g" : "—"}, Carbs ${n.carbs ? Math.round(n.carbs) + "g" : "—"}, Fat ${n.totalFat ? Math.round(n.totalFat) + "g" : "—"}`).join("\n")}`;
   } else {
     prompt += `
 
 ### Nutrition
-Not logged for this period. ${uc.eatingProtocol.loggingHabit}`;
+No meals logged in this period. The client still ate (OMAD protocol) — there is simply no data to analyze. Do NOT assume fasting or zero intake.`;
   }
 
   if (activityData && activityData.length > 0) {

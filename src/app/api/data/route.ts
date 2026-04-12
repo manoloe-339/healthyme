@@ -3,7 +3,6 @@ import { getDb } from "@/db";
 import { whoopRecovery, weightLog, dailyInsight, dailyNutrition, dailyActivity } from "@/db/schema";
 import { desc } from "drizzle-orm";
 import { computeCorrelations } from "@/lib/correlation";
-import { fillNutritionGaps } from "@/lib/nutrition-fill";
 
 export async function GET(request: NextRequest) {
   const window = parseInt(request.nextUrl.searchParams.get("window") ?? "7", 10);
@@ -22,25 +21,8 @@ export async function GET(request: NextRequest) {
     db.select({ createdAt: whoopRecovery.createdAt }).from(whoopRecovery).orderBy(desc(whoopRecovery.createdAt)).limit(1),
   ]);
 
-  // Collect all dates from recovery and weight
-  const allDates = new Set<string>();
-  recovery.forEach((r) => allDates.add(r.date));
-  weight.forEach((w) => allDates.add(w.date));
-  const sortedDates = Array.from(allDates).sort();
-
-  // Fill nutrition gaps with median of logged days
-  const filledNutrition = fillNutritionGaps(
-    nutrition.map((n) => ({
-      date: n.date,
-      calories: n.calories,
-      protein: n.protein,
-      carbs: n.carbs,
-      totalFat: n.totalFat,
-      fiber: n.fiber,
-      sugar: n.sugar,
-    })),
-    sortedDates
-  );
+  // Only include nutrition days that have real logged data (calories > 0)
+  const loggedNutrition = nutrition.filter((n) => n.calories && n.calories > 0);
 
   const weightByDate = new Map(weight.map((w) => [w.date, w.weightKg]));
   const mergedData = recovery.map((r) => ({
@@ -58,7 +40,7 @@ export async function GET(request: NextRequest) {
     recovery: recovery.reverse(),
     weight: weight.reverse(),
     allWeight: allWeight.reverse().map((w) => ({ date: w.date, weightLbs: w.weightKg * 2.20462 })),
-    nutrition: filledNutrition,
+    nutrition: loggedNutrition.reverse(),
     activity: activity.reverse(),
     correlations,
     latestInsight: insights[0] ?? null,
