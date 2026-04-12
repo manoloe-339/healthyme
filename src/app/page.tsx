@@ -134,25 +134,41 @@ function statusColor(score: number, greenThreshold: number, yellowThreshold: num
 
 // --- Expandable Section ---
 
+function WindowToggle({ windowDays, onToggle }: { windowDays: number; onToggle: () => void }) {
+  return (
+    <button
+      onClick={onToggle}
+      className="text-[10px] font-mono px-2 py-0.5 rounded border border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:border-zinc-500 transition-colors"
+    >
+      {windowDays}d
+    </button>
+  );
+}
+
 function ExpandableSection({
   title,
   headline,
   children,
   expandLabel = "Full Analysis",
   defaultContent,
+  headerRight,
 }: {
   title: string;
   headline?: string;
   children: React.ReactNode;
   expandLabel?: string;
   defaultContent?: React.ReactNode;
+  headerRight?: React.ReactNode;
 }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-base font-medium text-white">{title}</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base font-medium text-white">{title}</CardTitle>
+          {headerRight}
+        </div>
         {headline && (
           <CardDescription className="text-xs text-zinc-500 mt-0.5">
             {headline}
@@ -282,12 +298,6 @@ export default function Dashboard() {
           )}
         </div>
         <div className="flex gap-2 items-center">
-          <button
-            onClick={toggleWindow}
-            className="text-[10px] font-mono px-2 py-1 rounded border border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:border-zinc-500 transition-colors"
-          >
-            {windowDays}d
-          </button>
           <Link href="/insights"><Button variant="ghost" size="sm" className="text-xs">History</Button></Link>
           <Button variant="secondary" size="sm" className="text-xs" onClick={syncWhoop} disabled={syncing}>
             {syncing ? "Syncing..." : "Sync"}
@@ -354,6 +364,7 @@ export default function Dashboard() {
         title="Correlation Chart"
         headline={insight?.correlationHeadline ?? "Sync data and generate insights first."}
         expandLabel="Full Analysis"
+        headerRight={<WindowToggle windowDays={windowDays} onToggle={toggleWindow} />}
         defaultContent={
           chartData.length >= 2 ? <CorrelationChart data={chartData} /> : (
             <p className="text-sm text-zinc-500">Need more data to show correlations.</p>
@@ -437,6 +448,7 @@ export default function Dashboard() {
         title="Detail Tables"
         headline={insight?.detailHeadline ?? "Expand to see all data."}
         expandLabel="Show Tables"
+        headerRight={<WindowToggle windowDays={windowDays} onToggle={toggleWindow} />}
         defaultContent={null}
       >
         <div className="space-y-6">
