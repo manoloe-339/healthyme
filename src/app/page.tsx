@@ -74,6 +74,10 @@ function formatCorrelation(r: number | null): string {
   return `${sign}${r.toFixed(2)}`;
 }
 
+function kgToLbs(kg: number): number {
+  return kg * 2.20462;
+}
+
 function formatDate(dateStr: string): string {
   return new Date(dateStr + "T12:00:00").toLocaleDateString("en-US", {
     weekday: "short",
@@ -234,16 +238,16 @@ export default function Dashboard() {
             {latestWeight ? (
               <div>
                 <span className="text-3xl font-mono font-bold">
-                  {latestWeight.weightKg.toFixed(1)}
+                  {kgToLbs(latestWeight.weightKg).toFixed(1)}
                 </span>
-                <span className="text-lg text-muted-foreground ml-1">kg</span>
+                <span className="text-lg text-muted-foreground ml-1">lbs</span>
                 {data!.weight.length >= 2 && (
                   <p className="text-xs text-muted-foreground mt-1">
                     {(() => {
                       const prev = data!.weight[data!.weight.length - 2];
-                      const diff = latestWeight.weightKg - prev.weightKg;
+                      const diff = kgToLbs(latestWeight.weightKg) - kgToLbs(prev.weightKg);
                       const sign = diff >= 0 ? "+" : "";
-                      return `${sign}${diff.toFixed(1)} kg from ${formatDate(prev.date)}`;
+                      return `${sign}${diff.toFixed(1)} lbs from ${formatDate(prev.date)}`;
                     })()}
                   </p>
                 )}
@@ -410,7 +414,7 @@ export default function Dashboard() {
                           {r.strain ? r.strain.toFixed(1) : "—"}
                         </td>
                         <td className="text-right py-2 pl-3">
-                          {w ? `${w.weightKg.toFixed(1)}` : "—"}
+                          {w ? `${kgToLbs(w.weightKg).toFixed(1)}` : "—"}
                         </td>
                       </tr>
                     );

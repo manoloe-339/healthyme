@@ -88,7 +88,7 @@ export default function InsightsPage() {
                   {recoveryBadge(insight.recoveryScore)}
                   {insight.weightKg && (
                     <Badge variant="secondary">
-                      {insight.weightKg.toFixed(1)} kg
+                      {(insight.weightKg * 2.20462).toFixed(1)} lbs
                     </Badge>
                   )}
                 </div>

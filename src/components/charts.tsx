@@ -32,6 +32,10 @@ function shortDate(dateStr: string): string {
   });
 }
 
+function kgToLbs(kg: number): number {
+  return kg * 2.20462;
+}
+
 function recoveryBarColor(score: number): string {
   if (score >= 67) return "#4ade80";
   if (score >= 34) return "#facc15";
@@ -43,7 +47,7 @@ export function WeightChart({ data }: { data: WeightEntry[] }) {
 
   const chartData = data.map((d) => ({
     date: shortDate(d.date),
-    weight: Number(d.weightKg.toFixed(1)),
+    weight: Number(kgToLbs(d.weightKg).toFixed(1)),
   }));
 
   const weights = chartData.map((d) => d.weight);
@@ -73,7 +77,7 @@ export function WeightChart({ data }: { data: WeightEntry[] }) {
             color: "#fafafa",
             fontSize: 13,
           }}
-          formatter={(value) => [`${value} kg`, "Weight"]}
+          formatter={(value) => [`${value} lbs`, "Weight"]}
         />
         <Line
           type="monotone"
