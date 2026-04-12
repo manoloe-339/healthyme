@@ -3,44 +3,75 @@ import { getDb } from "@/db";
 import { weightLog } from "@/db/schema";
 import { sql } from "drizzle-orm";
 
-export async function POST(request: NextRequest) {
-  // Auth check temporarily disabled for debugging
-  // const authHeader = request.headers.get("authorization");
-  // const expectedToken = process.env.WEBHOOK_SECRET;
-  // if (expectedToken && authHeader !== `Bearer ${expectedToken}`) {
-  //   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  // }
+const WEIGHT_NAMES = [
+  "body_mass",
+  "weight",
+  "weight_body_mass",
+  "body_weight",
+  "lean_body_mass",
+  "Weight",
+  "Body Mass",
+];
 
+export async function POST(request: NextRequest) {
   const rawBody = await request.text();
-  console.log("Webhook received:", rawBody.substring(0, 500));
+  console.log("Webhook raw body:", rawBody.substring(0, 1000));
 
   let body;
   try {
     body = JSON.parse(rawBody);
   } catch {
-    return NextResponse.json({ error: "Invalid JSON", received: rawBody.substring(0, 200) }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid JSON", received: rawBody.substring(0, 200) },
+      { status: 400 }
+    );
   }
 
-  // Health Auto Export sends data in various formats
+  // Health Auto Export can send in multiple formats
   const metrics = body.data?.metrics ?? body.metrics ?? [];
-  const weightMetric = metrics.find(
-    (m: { name: string }) =>
-      m.name === "body_mass" || m.name === "weight"
+
+  // Try to find weight metric by name
+  let weightMetric = metrics.find((m: { name: string }) =>
+    WEIGHT_NAMES.some(
+      (n) => m.name?.toLowerCase() === n.toLowerCase()
+    )
   );
 
+  // If no match, log all metric names and try the first metric with numeric data
+  if (!weightMetric) {
+    const metricNames = metrics.map((m: { name: string }) => m.name);
+    console.log("Available metrics:", JSON.stringify(metricNames));
+
+    // Try first metric that has data with a qty or value field
+    weightMetric = metrics.find(
+      (m: { data?: { qty?: number; value?: number }[] }) =>
+        m.data?.some(
+          (d: { qty?: number; value?: number }) =>
+            d.qty !== undefined || d.value !== undefined
+        )
+    );
+  }
+
   if (!weightMetric?.data?.length) {
-    return NextResponse.json({ error: "No weight data found", body }, { status: 400 });
+    return NextResponse.json(
+      {
+        error: "No weight data found",
+        availableMetrics: metrics.map((m: { name: string }) => m.name),
+      },
+      { status: 400 }
+    );
   }
 
   const db = getDb();
+  let inserted = 0;
 
   for (const entry of weightMetric.data) {
-    const date =
-      entry.date?.split("T")[0] ??
-      new Date(entry.timestamp ?? entry.date).toISOString().split("T")[0];
+    const dateStr = entry.date ?? entry.timestamp;
+    if (!dateStr) continue;
+    const date = String(dateStr).split("T")[0];
     const weightKg = entry.qty ?? entry.value;
 
-    if (!date || !weightKg) continue;
+    if (!date || !weightKg || typeof weightKg !== "number") continue;
 
     await db
       .insert(weightLog)
@@ -52,7 +83,8 @@ export async function POST(request: NextRequest) {
           source: sql`excluded.source`,
         },
       });
+    inserted++;
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, inserted, metric: weightMetric.name });
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 import {
   Card,
   CardContent,
@@ -13,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { WeightChart, RecoveryChart, SleepChart } from "@/components/charts";
 
 interface RecoveryEntry {
   date: string;
@@ -137,9 +139,9 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <main className="mx-auto max-w-5xl p-6 space-y-6">
+      <main className="mx-auto max-w-5xl p-4 sm:p-6 space-y-4 sm:space-y-6">
         <Skeleton className="h-10 w-64" />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-32" />
           ))}
@@ -154,8 +156,9 @@ export default function Dashboard() {
   const correlations = data?.correlations;
 
   return (
-    <main className="mx-auto max-w-5xl p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <main className="mx-auto max-w-5xl p-4 sm:p-6 space-y-4 sm:space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight font-sans">
             healthyme
@@ -165,10 +168,13 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="secondary" onClick={syncWhoop} disabled={syncing}>
+          <Link href="/insights">
+            <Button variant="outline" size="sm">History</Button>
+          </Link>
+          <Button variant="secondary" size="sm" onClick={syncWhoop} disabled={syncing}>
             {syncing ? "Syncing..." : "Sync WHOOP"}
           </Button>
-          <Button onClick={generateInsight} disabled={generating}>
+          <Button size="sm" onClick={generateInsight} disabled={generating}>
             {generating ? "Generating..." : "Generate Insight"}
           </Button>
         </div>
@@ -193,7 +199,7 @@ export default function Dashboard() {
       )}
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Today&apos;s Recovery</CardDescription>
@@ -256,15 +262,15 @@ export default function Dashboard() {
             {correlations ? (
               <div className="space-y-1 font-mono text-sm">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Weight × Sleep</span>
+                  <span className="text-muted-foreground">Wt × Sleep</span>
                   <span>{formatCorrelation(correlations.weightVsSleep)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Weight × Recovery</span>
+                  <span className="text-muted-foreground">Wt × Recovery</span>
                   <span>{formatCorrelation(correlations.weightVsRecovery)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Weight × Strain</span>
+                  <span className="text-muted-foreground">Wt × Strain</span>
                   <span>{formatCorrelation(correlations.weightVsStrain)}</span>
                 </div>
                 <p className="text-xs text-muted-foreground pt-1">
@@ -278,20 +284,61 @@ export default function Dashboard() {
         </Card>
       </div>
 
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {data?.weight && data.weight.length >= 2 && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Weight Trend</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <WeightChart data={data.weight} />
+            </CardContent>
+          </Card>
+        )}
+
+        {data?.recovery && data.recovery.length > 0 && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Recovery</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <RecoveryChart data={data.recovery} />
+            </CardContent>
+          </Card>
+        )}
+
+        {data?.recovery && data.recovery.some((r) => r.sleepPerformance !== null) && (
+          <Card className="lg:col-span-2">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Sleep Performance</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <SleepChart data={data.recovery} />
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
       {/* Daily Insight */}
       {data?.latestInsight && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">
-              Daily Insight — {formatDate(data.latestInsight.date)}
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">
+                Daily Insight — {formatDate(data.latestInsight.date)}
+              </CardTitle>
+              <Link href="/insights">
+                <Button variant="ghost" size="sm">View all</Button>
+              </Link>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm leading-relaxed">
               {data.latestInsight.insightText}
             </p>
             <Separator />
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
               {data.latestInsight.weightTrend && (
                 <div>
                   <p className="font-medium text-muted-foreground mb-1">
@@ -328,16 +375,16 @@ export default function Dashboard() {
         </CardHeader>
         <CardContent>
           {data?.recovery && data.recovery.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+            <div className="overflow-x-auto -mx-6 px-6">
+              <table className="w-full text-sm min-w-[500px]">
                 <thead>
                   <tr className="border-b border-border text-muted-foreground">
-                    <th className="text-left py-2 pr-4 font-medium">Date</th>
-                    <th className="text-right py-2 px-4 font-medium">Recovery</th>
-                    <th className="text-right py-2 px-4 font-medium">Sleep</th>
-                    <th className="text-right py-2 px-4 font-medium">HRV</th>
-                    <th className="text-right py-2 px-4 font-medium">Strain</th>
-                    <th className="text-right py-2 pl-4 font-medium">Weight</th>
+                    <th className="text-left py-2 pr-3 font-medium">Date</th>
+                    <th className="text-right py-2 px-3 font-medium">Rec</th>
+                    <th className="text-right py-2 px-3 font-medium">Sleep</th>
+                    <th className="text-right py-2 px-3 font-medium">HRV</th>
+                    <th className="text-right py-2 px-3 font-medium">Strain</th>
+                    <th className="text-right py-2 pl-3 font-medium">Weight</th>
                   </tr>
                 </thead>
                 <tbody className="font-mono">
@@ -345,24 +392,24 @@ export default function Dashboard() {
                     const w = data.weight.find((w) => w.date === r.date);
                     return (
                       <tr key={r.date} className="border-b border-border/50">
-                        <td className="py-2 pr-4">{formatDate(r.date)}</td>
+                        <td className="py-2 pr-3 whitespace-nowrap">{formatDate(r.date)}</td>
                         <td
-                          className={`text-right py-2 px-4 ${recoveryColor(r.recoveryScore)}`}
+                          className={`text-right py-2 px-3 ${recoveryColor(r.recoveryScore)}`}
                         >
                           {r.recoveryScore}%
                         </td>
-                        <td className="text-right py-2 px-4">
+                        <td className="text-right py-2 px-3">
                           {r.sleepPerformance
                             ? `${r.sleepPerformance.toFixed(0)}%`
                             : "—"}
                         </td>
-                        <td className="text-right py-2 px-4">
+                        <td className="text-right py-2 px-3">
                           {r.hrvRmssd ? `${r.hrvRmssd.toFixed(0)}` : "—"}
                         </td>
-                        <td className="text-right py-2 px-4">
+                        <td className="text-right py-2 px-3">
                           {r.strain ? r.strain.toFixed(1) : "—"}
                         </td>
-                        <td className="text-right py-2 pl-4">
+                        <td className="text-right py-2 pl-3">
                           {w ? `${w.weightKg.toFixed(1)}` : "—"}
                         </td>
                       </tr>
