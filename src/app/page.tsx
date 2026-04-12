@@ -179,10 +179,12 @@ export default function Dashboard() {
   const [syncing, setSyncing] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [windowDays, setWindowDays] = useState<7 | 30>(7);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (days?: number) => {
     try {
-      const res = await fetch("/api/data");
+      const w = days ?? windowDays;
+      const res = await fetch(`/api/data?window=${w}`);
       if (!res.ok) throw new Error("Failed to load data");
       setData(await res.json());
       setError(null);
@@ -191,9 +193,15 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [windowDays]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  function toggleWindow() {
+    const next = windowDays === 7 ? 30 : 7;
+    setWindowDays(next);
+    fetchData(next);
+  }
 
   async function syncWhoop() {
     setSyncing(true);
@@ -267,7 +275,13 @@ export default function Dashboard() {
             </p>
           )}
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <button
+            onClick={toggleWindow}
+            className="text-[10px] font-mono px-2 py-1 rounded border border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:border-zinc-500 transition-colors"
+          >
+            {windowDays}d
+          </button>
           <Link href="/insights"><Button variant="ghost" size="sm" className="text-xs">History</Button></Link>
           <Button variant="secondary" size="sm" className="text-xs" onClick={syncWhoop} disabled={syncing}>
             {syncing ? "Syncing..." : "Sync"}

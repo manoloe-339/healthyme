@@ -1,18 +1,21 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { whoopRecovery, weightLog, dailyInsight, dailyNutrition, dailyActivity } from "@/db/schema";
 import { desc } from "drizzle-orm";
 import { computeCorrelations } from "@/lib/correlation";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const window = parseInt(request.nextUrl.searchParams.get("window") ?? "7", 10);
+  const limit = window === 30 ? 30 : 7;
+
   const db = getDb();
 
   const [recovery, weight, insights, nutrition, activity, lastWeightSync, lastWhoopSync] = await Promise.all([
-    db.select().from(whoopRecovery).orderBy(desc(whoopRecovery.date)).limit(7),
-    db.select().from(weightLog).orderBy(desc(weightLog.date)).limit(7),
+    db.select().from(whoopRecovery).orderBy(desc(whoopRecovery.date)).limit(limit),
+    db.select().from(weightLog).orderBy(desc(weightLog.date)).limit(limit),
     db.select().from(dailyInsight).orderBy(desc(dailyInsight.date)).limit(1),
-    db.select().from(dailyNutrition).orderBy(desc(dailyNutrition.date)).limit(7),
-    db.select().from(dailyActivity).orderBy(desc(dailyActivity.date)).limit(7),
+    db.select().from(dailyNutrition).orderBy(desc(dailyNutrition.date)).limit(limit),
+    db.select().from(dailyActivity).orderBy(desc(dailyActivity.date)).limit(limit),
     db.select({ createdAt: weightLog.createdAt }).from(weightLog).orderBy(desc(weightLog.createdAt)).limit(1),
     db.select({ createdAt: whoopRecovery.createdAt }).from(whoopRecovery).orderBy(desc(whoopRecovery.createdAt)).limit(1),
   ]);
@@ -29,6 +32,7 @@ export async function GET() {
   const correlations = computeCorrelations(mergedData);
 
   return NextResponse.json({
+    window: limit,
     recovery: recovery.reverse(),
     weight: weight.reverse(),
     nutrition: nutrition.reverse(),
