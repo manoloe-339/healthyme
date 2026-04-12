@@ -331,7 +331,16 @@ export default function Dashboard() {
       {data?.allWeight && data.allWeight.length > 0 && (
         <Card className="overflow-hidden">
           <CardContent className="pt-6">
-            <StatusGraphic weights={data.allWeight} />
+            <StatusGraphic
+              weights={data.allWeight}
+              nutritionDates={data.nutrition?.filter(n => n.calories && !('estimated' in n && (n as {estimated?: boolean}).estimated)).map(n => n.date) ?? []}
+              todayProtein={(() => {
+                const today = new Date().toISOString().split("T")[0];
+                const todayNutrition = data.nutrition?.find(n => n.date === today || n.date?.startsWith(today));
+                return todayNutrition?.protein ?? null;
+              })()}
+              proteinTarget={130}
+            />
           </CardContent>
         </Card>
       )}
@@ -481,7 +490,7 @@ export default function Dashboard() {
                     </tr>
                   </thead>
                   <tbody className="font-mono">
-                    {data.recovery.map((r) => {
+                    {[...data.recovery].reverse().map((r) => {
                       const w = data.weight.find((w) => w.date === r.date);
                       return (
                         <tr key={r.date} className="border-b border-border/30">
@@ -516,7 +525,7 @@ export default function Dashboard() {
                     </tr>
                   </thead>
                   <tbody className="font-mono">
-                    {data.weight.map((w) => (
+                    {[...data.weight].reverse().map((w) => (
                       <tr key={w.date} className="border-b border-border/30">
                         <td className="py-1.5 pr-2 whitespace-nowrap">{formatDate(w.date)}</td>
                         <td className="text-right py-1.5 px-2">{kgToLbs(w.weightKg).toFixed(1)} lbs</td>
@@ -546,7 +555,7 @@ export default function Dashboard() {
                     </tr>
                   </thead>
                   <tbody className="font-mono">
-                    {data!.nutrition.map((n) => (
+                    {[...data!.nutrition].reverse().map((n) => (
                       <tr key={n.date} className="border-b border-border/30">
                         <td className="py-1.5 pr-2 whitespace-nowrap">{formatDate(n.date)}</td>
                         <td className="text-right py-1.5 px-2">{n.calories ? Math.round(n.calories) : "—"}</td>
@@ -576,7 +585,7 @@ export default function Dashboard() {
                     </tr>
                   </thead>
                   <tbody className="font-mono">
-                    {data!.activity.map((a) => (
+                    {[...data!.activity].reverse().map((a) => (
                       <tr key={a.date} className="border-b border-border/30">
                         <td className="py-1.5 pr-2 whitespace-nowrap">{formatDate(a.date)}</td>
                         <td className="text-right py-1.5 px-2">{a.steps ? a.steps.toLocaleString() : "—"}</td>
