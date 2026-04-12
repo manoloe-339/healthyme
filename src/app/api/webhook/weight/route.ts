@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
   );
 
   if (!weightMetric?.data?.length) {
-    return NextResponse.json({ error: "No weight data found" }, { status: 400 });
+    return NextResponse.json({ error: "No weight data found", body }, { status: 400 });
   }
 
   const db = getDb();
