@@ -514,6 +514,100 @@ export default function Dashboard() {
           )}
         </div>
       </ExpandableSection>
+
+      {/* Copy Page & Version Footer */}
+      <CopyFooter data={data} insight={insight} />
     </main>
+  );
+}
+
+function CopyFooter({ data, insight }: { data: DashboardData | null; insight: Insight | null | undefined }) {
+  const [copied, setCopied] = useState(false);
+
+  function buildSnapshot(): string {
+    const lines: string[] = [];
+    lines.push(`healthyme snapshot — ${new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles" })} PT`);
+    lines.push("");
+
+    if (data?.recovery?.length) {
+      lines.push("## Recovery & Sleep");
+      data.recovery.forEach((r) => {
+        const hrs = r.sleepDurationMs ? `${(r.sleepDurationMs / 3600000).toFixed(1)}h` : "—";
+        lines.push(`${r.date.substring(0, 10)}: Rec ${r.recoveryScore}%, Sleep ${r.sleepPerformance?.toFixed(0) ?? "—"}%, ${hrs}, HRV ${r.hrvRmssd?.toFixed(0) ?? "—"}, Strain ${r.strain?.toFixed(1) ?? "—"}`);
+      });
+      lines.push("");
+    }
+
+    if (data?.weight?.length) {
+      lines.push("## Weight & Body Comp");
+      data.weight.forEach((w: WeightEntry) => {
+        const lbs = kgToLbs(w.weightKg).toFixed(1);
+        const bf = w.bodyFatPct ? `, BF ${w.bodyFatPct.toFixed(1)}%` : "";
+        const lean = w.leanBodyMassKg ? `, Lean ${kgToLbs(w.leanBodyMassKg).toFixed(1)} lbs` : "";
+        lines.push(`${w.date.substring(0, 10)}: ${lbs} lbs${bf}${lean}`);
+      });
+      lines.push("");
+    }
+
+    if (data?.nutrition?.length) {
+      lines.push("## Nutrition");
+      data.nutrition.forEach((n) => {
+        lines.push(`${n.date.substring(0, 10)}: ${n.calories ? Math.round(n.calories) + " kcal" : "—"}, Pro ${n.protein ? Math.round(n.protein) + "g" : "—"}, Carb ${n.carbs ? Math.round(n.carbs) + "g" : "—"}, Fat ${n.totalFat ? Math.round(n.totalFat) + "g" : "—"}`);
+      });
+      lines.push("");
+    }
+
+    if (data?.activity?.length) {
+      lines.push("## Activity");
+      data.activity.forEach((a) => {
+        lines.push(`${a.date.substring(0, 10)}: ${a.steps?.toLocaleString() ?? "—"} steps, ${a.activeEnergy ? Math.round(a.activeEnergy) + " active kcal" : "—"}, ${a.exerciseMinutes ? Math.round(a.exerciseMinutes) + "m exercise" : "—"}`);
+      });
+      lines.push("");
+    }
+
+    if (data?.correlations) {
+      const c = data.correlations;
+      lines.push(`## Correlations (${c.windowDays}d window)`);
+      lines.push(`Wt×Sleep: ${c.weightVsSleep?.toFixed(2) ?? "—"} | Wt×Recovery: ${c.weightVsRecovery?.toFixed(2) ?? "—"} | Wt×Strain: ${c.weightVsStrain?.toFixed(2) ?? "—"}`);
+      if (c.sleepWarning) lines.push(`⚠ ${c.consecutiveLowSleep} consecutive days below 65% sleep`);
+      lines.push("");
+    }
+
+    if (insight) {
+      lines.push("## Latest Insight");
+      if (insight.coachSummary) lines.push(`Coach: ${insight.coachSummary}`);
+      if (insight.workoutPrescription) lines.push(`Workout Rx: ${insight.workoutPrescription}`);
+      if (insight.correlationAnalysis) lines.push(`Correlations: ${insight.correlationAnalysis}`);
+      lines.push("");
+    }
+
+    if (data?.lastSync) {
+      lines.push(`Last sync — Auto Export: ${data.lastSync.autoExport ?? "never"} | WHOOP: ${data.lastSync.whoop ?? "never"}`);
+    }
+
+    lines.push(`Version: ${process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.substring(0, 7) ?? "dev"} | Deploy: ${process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_MESSAGE?.substring(0, 50) ?? "local"}`);
+
+    return lines.join("\n");
+  }
+
+  async function copyToClipboard() {
+    const text = buildSnapshot();
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <div className="border-t border-border/30 pt-4 mt-4 flex items-center justify-between">
+      <p className="text-[10px] text-zinc-700 font-mono">
+        v0.1.0 · {process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.substring(0, 7) ?? "dev"} · {process.env.NEXT_PUBLIC_VERCEL_ENV ?? "local"}
+      </p>
+      <button
+        onClick={copyToClipboard}
+        className="text-[10px] text-zinc-600 hover:text-zinc-400 transition-colors font-mono"
+      >
+        {copied ? "Copied!" : "Copy page snapshot"}
+      </button>
+    </div>
   );
 }
