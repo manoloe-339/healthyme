@@ -115,10 +115,15 @@ function MilestoneGauge({ pctComplete, currentWeight, nextMilestone, paceStatus 
             />
           );
         })}
+        {/* Percentage in center of arc */}
+        <text x={cx} y={cy - 15} textAnchor="middle" fill="#a1a1aa" fontSize="22" fontWeight="bold" fontFamily="monospace">
+          {pctComplete.toFixed(0)}%
+        </text>
+        {/* Next milestone below */}
+        <text x={cx} y={cy} textAnchor="middle" fill="#71717a" fontSize="10">
+          {nextMilestone.label} · {nextMilestone.weight} lbs
+        </text>
       </svg>
-      <p className="text-xs text-zinc-500 mt-2">
-        {pctComplete.toFixed(1)}% complete · Next: {nextMilestone.label} ({nextMilestone.weight} lbs)
-      </p>
     </div>
   );
 }
