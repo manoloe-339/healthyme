@@ -1,4 +1,5 @@
 import { generateText, Output } from "ai";
+import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
 
 const insightSchema = z.object({
@@ -49,7 +50,7 @@ ${weightData.map((w) => `- ${w.date}: ${w.weightKg} kg`).join("\n")}
 - Be direct, specific, and actionable`;
 
   const result = await generateText({
-    model: "anthropic/claude-sonnet-4.5",
+    model: anthropic("claude-sonnet-4-5-20250929"),
     output: Output.object({ schema: insightSchema }),
     prompt,
   });
