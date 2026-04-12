@@ -81,6 +81,7 @@ export async function POST(request: NextRequest) {
             bodyFatPct: sql`excluded.body_fat_pct`,
             leanBodyMassKg: sql`excluded.lean_body_mass_kg`,
             source: sql`excluded.source`,
+            createdAt: sql`now()`,
           },
         });
     }
@@ -129,6 +130,7 @@ export async function POST(request: NextRequest) {
             totalFat: sql`excluded.total_fat`,
             fiber: sql`excluded.fiber`,
             sugar: sql`excluded.sugar`,
+            createdAt: sql`now()`,
           },
         });
     }
@@ -173,6 +175,7 @@ export async function POST(request: NextRequest) {
             exerciseMinutes: sql`excluded.exercise_minutes`,
             flightsClimbed: sql`excluded.flights_climbed`,
             walkingDistance: sql`excluded.walking_distance_mi`,
+            createdAt: sql`now()`,
           },
         });
     }
