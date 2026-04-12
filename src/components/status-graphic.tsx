@@ -93,15 +93,33 @@ export function StatusGraphic({ weights, nutritionDates = [], todayProtein = nul
   }
 
   // Segment-based arc
-  const allPoints = [
-    { weight: BASELINE.startWeight, label: "Start", date: BASELINE.startDate },
-    ...MILESTONES,
-  ];
-  const nextIdx = allPoints.findIndex((m) => latest.weightLbs > m.weight);
-  const segStart = nextIdx > 0 ? allPoints[nextIdx - 1].weight : BASELINE.startWeight;
+  // Start = weight when this milestone segment began (stored in localStorage)
+  // End = next milestone target
+  // Arc fills as weight drops from start toward end
+  // Resets when milestone is hit
   const segEnd = nextMsData.weight;
+  const storageKey = `healthyme_milestone_start_${segEnd}`;
+  let segStart = latest.weightLbs;
+
+  if (typeof window !== "undefined") {
+    const stored = localStorage.getItem(storageKey);
+    if (stored) {
+      segStart = parseFloat(stored);
+    } else {
+      // First time seeing this milestone — store current weight as start
+      localStorage.setItem(storageKey, latest.weightLbs.toString());
+    }
+    // If weight went up above stored start, update it
+    if (latest.weightLbs > segStart) {
+      segStart = latest.weightLbs;
+      localStorage.setItem(storageKey, latest.weightLbs.toString());
+    }
+  }
+
   const segRange = segStart - segEnd;
-  const segProgress = segRange > 0 ? Math.min(((segStart - latest.weightLbs) / segRange) * 100, 100) : 0;
+  const segProgress = segRange > 0
+    ? Math.min(((segStart - latest.weightLbs) / segRange) * 100, 100)
+    : 0;
 
   const radius = 120;
   const cx = 150;
@@ -166,9 +184,9 @@ export function StatusGraphic({ weights, nutritionDates = [], todayProtein = nul
           <text x={cx} y={cy + 10} textAnchor="middle" fill={arcColor} fontSize="11" fontWeight="500">
             {pace.status === "green" ? "Ahead of pace" : pace.status === "yellow" ? "Close to pace" : "Behind pace"} · {pace.requiredPacePerWeek.toFixed(1)} lbs/wk
           </text>
-          {/* Debug: segment info */}
+          {/* Segment info */}
           <text x={cx} y={cy + 25} textAnchor="middle" fill="#52525b" fontSize="9">
-            {Math.round(segStart)}→{segEnd} · {segProgress.toFixed(0)}% done
+            {segStart.toFixed(1)}→{segEnd} · {segProgress.toFixed(0)}%
           </text>
 
           {/* Target weight next to gold dot */}
