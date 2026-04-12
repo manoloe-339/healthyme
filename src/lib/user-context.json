@@ -1,42 +1,83 @@
 {
   "name": "Manolo",
-  "goal": "Body recomposition — lose fat, preserve/build muscle",
-  "currentWeight": {
-    "lbs": 218,
-    "asOf": "2026-04-11"
+  "personal": {
+    "sex": "Male",
+    "height": "5'7\"",
+    "age": 53
   },
-  "goalWeight": {
-    "lbs": 190,
-    "targetDate": "2026-09-01"
+  "goal": {
+    "targetWeight": 160,
+    "targetDate": "2026-10-31",
+    "sustainedWeeks": 3,
+    "startWeight": 218,
+    "startDate": "2026-04-05",
+    "currentWeight": 215,
+    "currentAsOf": "mid-April 2026"
   },
-  "weeklyTargets": {
-    "weightLossRate": "1-1.5 lbs/week",
-    "proteinMinimum": "180g/day",
-    "calorieTarget": "1800-2000 kcal/day",
-    "stepsMinimum": 10000
+  "historicalPattern": {
+    "summary": "Aggressive 2022 cut (~55 lbs peak to trough) followed by near-complete regain through 2023. This is the pattern to break. Current protocol is designed for sustainable loss through the grind zone, not aggressive cutting.",
+    "keyYears": {
+      "2020-2021": "avg 208.6 lbs, started ~178, climbed to ~235 peak",
+      "2021": "avg 222.4 lbs, volatile, ended trending up to ~238",
+      "2022": "avg 215.9 lbs, dropped hard from ~238 to ~183 by September, then rebounded",
+      "2023": "avg 204.6 lbs, near complete regain from the 2022 cut, climbed to ~227 by December",
+      "2024": "avg 229 lbs, relatively flat range ~220-238, ended at ~238",
+      "2025": "avg 236.4 lbs, mostly flat until October drop, slight uptick end of year",
+      "2026-Q1": "avg 231.8 lbs, sharp downward trend to ~218 by April"
+    }
   },
-  "eatingWindow": {
-    "protocol": "OMAD",
-    "window": "11am-2pm PT",
-    "notes": "Single large meal plus protein shake if needed to hit target"
+  "eatingProtocol": {
+    "type": "OMAD",
+    "window": "11am-2pm daily",
+    "orientation": "Low-carb, no strict elimination",
+    "decisionFilter": "Protein-to-calorie ratio is the primary food choice metric"
   },
+  "proteinStrategy": {
+    "dailyMinimum": "120-130g",
+    "primarySources": "canned albacore tuna, sardines, smoked trout, chicken tenderloins, Greek yogurt, ground turkey, shrimp, tofu, hard boiled eggs, Isopure Zero Carb whey isolate (2 scoops standard)"
+  },
+  "supplements": "creatine monohydrate 3-5g daily, LMNT electrolytes, Isopure whey protein isolate",
   "workoutSplit": {
     "pattern": "Alternating gym and rowing",
-    "gym": "Heavy compound lifts — squat, deadlift, bench, overhead press, rows",
-    "rowing": "Concept2 intervals or steady-state 30-45 min",
-    "restDays": "Based on WHOOP recovery — red days are active recovery only",
-    "schedule": "Train 5-6 days/week when recovery allows"
+    "dailySteps": "12000+ minimum",
+    "details": "Gym = heavy compound lifts. Rowing = Concept2 intervals or steady-state."
+  },
+  "monthlyMilestones": {
+    "May 1": 209,
+    "Jun 1": 200,
+    "Jul 1": 191,
+    "Aug 1": 182,
+    "Sep 1": 173,
+    "Oct 1": 164,
+    "Oct 31": 160
+  },
+  "expectedPace": {
+    "aprJun": "~2.5-3 lbs/week (faster phase)",
+    "julAug": "~1-1.5 lbs/week with stalls (grind zone)",
+    "sepOct": "~0.75-1.25 lbs/week (hard yards)"
   },
   "refeedCadence": {
-    "frequency": "Every 10-14 days",
-    "protocol": "Increase carbs to 200-250g, keep protein at 180g+, calories at maintenance (~2500)",
-    "purpose": "Reset leptin, restore glycogen, support thyroid function",
+    "frequency": "Every 2-3 weeks",
+    "protocol": "Higher calorie OMAD day with higher carbs and maintained protein",
+    "purpose": "Addresses leptin signaling without breaking eating window",
     "trigger": "Also triggered if 3+ days of declining recovery scores"
   },
-  "sleepRules": {
-    "targetHours": 7.5,
-    "minimumHours": 7,
-    "notes": "Wakes around 8am PT. Poor sleep is the #1 threat to recomp progress."
+  "coachingProfile": {
+    "experience": "Experienced with weight loss cycles, understands the mechanics",
+    "style": "Does not need basic education, needs specific data-driven coaching. Knows the difference between water retention stalls and true metabolic adaptation. Responds to direct, specific recommendations not menus of options.",
+    "primaryRisk": "Jul-Aug grind zone where motivation erodes and protocol breaks down"
   },
-  "coachingStyle": "Direct, no-BS. Call out bad patterns immediately. Prioritize muscle preservation over speed of weight loss. Always reference the specific numbers from the data."
+  "insightRules": {
+    "sleepWarning": "Flag sleep below 65% for 3+ consecutive nights as metabolic warning",
+    "rollingWindow": "Use 3-5 day rolling window for weight and recovery correlation, not single day readings",
+    "workoutPrescription": "Prescribe tomorrow's workout intensity based on recovery score",
+    "stallInterpretation": "Distinguish water retention stalls from true metabolic adaptation",
+    "refeedTiming": "Factor refeed timing into recovery score interpretation",
+    "recoveryThresholds": {
+      "below50": "Recommend lower intensity or active recovery only",
+      "50to70": "Proceed with planned session, moderate intensity",
+      "above70": "Full session, can push harder"
+    },
+    "metabolicRisk": "Sleep performance below 65% for 3+ nights: flag metabolic risk, recommend refeed consideration"
+  }
 }
