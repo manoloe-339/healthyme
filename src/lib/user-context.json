@@ -1,0 +1,42 @@
+{
+  "name": "Manolo",
+  "goal": "Body recomposition — lose fat, preserve/build muscle",
+  "currentWeight": {
+    "lbs": 218,
+    "asOf": "2026-04-11"
+  },
+  "goalWeight": {
+    "lbs": 190,
+    "targetDate": "2026-09-01"
+  },
+  "weeklyTargets": {
+    "weightLossRate": "1-1.5 lbs/week",
+    "proteinMinimum": "180g/day",
+    "calorieTarget": "1800-2000 kcal/day",
+    "stepsMinimum": 10000
+  },
+  "eatingWindow": {
+    "protocol": "OMAD",
+    "window": "11am-2pm PT",
+    "notes": "Single large meal plus protein shake if needed to hit target"
+  },
+  "workoutSplit": {
+    "pattern": "Alternating gym and rowing",
+    "gym": "Heavy compound lifts — squat, deadlift, bench, overhead press, rows",
+    "rowing": "Concept2 intervals or steady-state 30-45 min",
+    "restDays": "Based on WHOOP recovery — red days are active recovery only",
+    "schedule": "Train 5-6 days/week when recovery allows"
+  },
+  "refeedCadence": {
+    "frequency": "Every 10-14 days",
+    "protocol": "Increase carbs to 200-250g, keep protein at 180g+, calories at maintenance (~2500)",
+    "purpose": "Reset leptin, restore glycogen, support thyroid function",
+    "trigger": "Also triggered if 3+ days of declining recovery scores"
+  },
+  "sleepRules": {
+    "targetHours": 7.5,
+    "minimumHours": 7,
+    "notes": "Wakes around 8am PT. Poor sleep is the #1 threat to recomp progress."
+  },
+  "coachingStyle": "Direct, no-BS. Call out bad patterns immediately. Prioritize muscle preservation over speed of weight loss. Always reference the specific numbers from the data."
+}

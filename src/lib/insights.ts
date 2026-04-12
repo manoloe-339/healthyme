@@ -1,6 +1,7 @@
 import { generateText, Output } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
+import userContext from "./user-context.json";
 
 const insightSchema = z.object({
   weightTrend: z.string().describe("Description of weight trend over the window"),
@@ -48,7 +49,16 @@ export async function generateDailyInsight(input: InsightInput): Promise<Insight
 
   const kgToLbs = (kg: number) => (kg * 2.20462).toFixed(1);
 
-  let prompt = `You are a body recomposition coach analyzing biometric data for a client who wants to lose fat while preserving muscle. Weight is shown in lbs.
+  let prompt = `You are ${userContext.name}'s personal body recomposition coach. You know his protocol intimately and judge everything against it — not generic fitness norms.
+
+## Client Protocol
+- **Goal:** ${userContext.goal}. Current ${userContext.currentWeight.lbs} lbs → ${userContext.goalWeight.lbs} lbs by ${userContext.goalWeight.targetDate}
+- **Weekly targets:** ${userContext.weeklyTargets.weightLossRate} loss, ${userContext.weeklyTargets.proteinMinimum} protein, ${userContext.weeklyTargets.calorieTarget} calories, ${userContext.weeklyTargets.stepsMinimum}+ steps
+- **Eating:** ${userContext.eatingWindow.protocol} (${userContext.eatingWindow.window}). ${userContext.eatingWindow.notes}
+- **Training:** ${userContext.workoutSplit.pattern}. Gym = ${userContext.workoutSplit.gym}. Rowing = ${userContext.workoutSplit.rowing}. ${userContext.workoutSplit.schedule}. ${userContext.workoutSplit.restDays}
+- **Refeeds:** ${userContext.refeedCadence.frequency}. ${userContext.refeedCadence.protocol}. ${userContext.refeedCadence.purpose}. ${userContext.refeedCadence.trigger}
+- **Sleep:** Target ${userContext.sleepRules.targetHours}h, minimum ${userContext.sleepRules.minimumHours}h. ${userContext.sleepRules.notes}
+- **Coaching style:** ${userContext.coachingStyle}
 
 ## Data (last 3-5 days)
 
@@ -82,17 +92,17 @@ ${activityData.map((a) => `- ${a.date}: ${a.steps ? a.steps.toLocaleString() + "
 ### Today's Recovery Score: ${todayRecovery}%
 
 ## Rules
-- If 2+ consecutive days have sleep performance < 70%, flag metabolic risk to weight loss
-- If sleep duration < 7h, note this impairs recovery and fat loss
-- Recovery >= 67%: recommend high intensity (rowing intervals or heavy gym session)
-- Recovery 34-66%: recommend moderate (steady-state rowing or light gym)
-- Recovery < 34%: recommend active recovery only (walk or stretch)
-- For recomp: protein should be ~1g per lb of target body weight (~180-200g/day)
-- If calories are logged and below 1500, warn about metabolic adaptation risk
-- If calories are logged and protein is below 150g, flag it
-- Explain WHY weight moved based on sleep/recovery/strain/nutrition correlation
-- If body fat % is trending, comment on whether fat loss vs muscle loss
-- Be direct, specific, and actionable
+- Judge ALL data against the protocol above — not generic advice
+- If 2+ consecutive days have sleep < ${userContext.sleepRules.minimumHours}h or sleep performance < 70%, flag metabolic risk
+- Recovery >= 67%: recommend the next workout in the alternating split (gym or rowing)
+- Recovery 34-66%: recommend the lighter option (steady-state rowing or light gym)
+- Recovery < 34%: active recovery only — override the split
+- Protein must hit ${userContext.weeklyTargets.proteinMinimum} within the ${userContext.eatingWindow.protocol} window. Flag if under.
+- Calories should be ${userContext.weeklyTargets.calorieTarget}. Below 1500 = metabolic adaptation warning. Above 2200 = surplus warning (unless refeed day).
+- Track progress toward ${userContext.goalWeight.lbs} lbs by ${userContext.goalWeight.targetDate}. At ${userContext.weeklyTargets.weightLossRate}, is the client on track?
+- If recovery has declined 3+ days, suggest a refeed per protocol
+- If body fat % is trending, comment on fat loss vs muscle loss — muscle preservation is priority
+- Be direct, reference specific numbers from the data, no generic platitudes
 
 ## Nutrition-Recovery Correlation Analysis
 For the nutritionCorrelation field, specifically analyze:
