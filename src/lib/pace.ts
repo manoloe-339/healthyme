@@ -61,12 +61,14 @@ export function getPaceStatus(currentWeight: number, today: string) {
   // Pace status: compare actual vs milestone-based expected
   const diff = currentWeight - expectedWeight; // negative = ahead, positive = behind
   let status: "green" | "yellow" | "red";
-  if (diff <= 2) {
-    status = "green"; // within 2 lbs of expected = on track
-  } else if (diff <= 5) {
-    status = "yellow"; // 2-5 lbs behind = close
+  // Green if within 1.5 weeks of required loss (accounts for water fluctuation)
+  const weeklyPace = requiredPacePerWeek;
+  if (diff <= weeklyPace * 1.5) {
+    status = "green"; // less than 1.5 weeks behind = on track
+  } else if (diff <= weeklyPace * 3) {
+    status = "yellow"; // 1.5-3 weeks behind = close
   } else {
-    status = "red"; // more than 5 lbs behind
+    status = "red"; // more than 2 weeks behind
   }
 
   return {
@@ -98,15 +100,20 @@ export function getWeightTrends(
     const cutoff = new Date(today + "T12:00:00");
     cutoff.setDate(cutoff.getDate() - daysAgo);
     const cutoffStr = cutoff.toISOString().split("T")[0];
-    const earliest = sorted.find((w) => w.date <= cutoffStr);
-    if (!earliest) {
-      // Not enough history — use the oldest data point we have
+
+    // Find the entry closest to the cutoff date (first entry on or after cutoff)
+    const entry = sorted.find((w) => w.date >= cutoffStr);
+    if (!entry || entry.date === sorted[sorted.length - 1].date) {
+      // Only have the latest entry, or no entry in range
+      // Fall back to oldest entry if it covers at least half the window
       const oldest = sorted[0];
       const actualDays = daysBetween(oldest.date, today);
-      if (actualDays < daysAgo * 0.5) return null; // Less than half the window, don't show
+      if (actualDays < daysAgo * 0.7) return null;
       return { value: oldest.weightLbs - latest, actualDays };
     }
-    return { value: earliest.weightLbs - latest, actualDays: daysAgo };
+    const actualDays = daysBetween(entry.date, today);
+    if (actualDays < 1) return null;
+    return { value: entry.weightLbs - latest, actualDays };
   }
 
   const sinceBaseline = BASELINE.startWeight - latest;
