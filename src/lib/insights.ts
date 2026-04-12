@@ -17,7 +17,7 @@ const insightSchema = z.object({
   statusHeadline: z.string().describe("Exactly 6 words summarizing current status across recovery/sleep/pace. E.g. 'Recovery yellow. Sleep ok. Pace ahead.' or 'Red recovery. Sleep tanked. Off pace.'"),
   coachHeadline: z.string().describe("Exactly 6 words — the single most important coaching message. E.g. 'Under-fueling is killing your recovery score.' or 'Sleep debt erasing your calorie deficit.'"),
   workoutHeadline: z.string().describe("Exactly 6 words for today's workout prescription. E.g. '58% recovery. Row easy, not hard.' or 'Green light. Push the heavy compounds.'"),
-  detailHeadline: z.string().describe("Exactly 6 words highlighting a key data pattern. Do NOT use simple oldest-minus-newest subtraction for weight. Instead analyze the full 7-day pattern: overall direction, whether there was a stall or reversal mid-window, and the net change. E.g. 'Stalled mid-week then broke through.' or 'Three nights under seven hours. Fix.' or 'Steady drop, no stall. Keep going.'"),
+  detailHeadline: z.string().describe("Exactly 6 words highlighting a key data pattern. Use numerals not words for numbers (e.g. '2.5' not 'two point five'). Do NOT use simple oldest-minus-newest subtraction for weight. Analyze the full 7-day pattern: direction, stalls, reversals. E.g. 'Stalled mid-week then broke through.' or '3 nights under 7 hours. Fix.' or 'Steady drop, no stall. Keep going.'"),
 
   // Full analysis texts (hidden by default, shown on expand)
   correlationAnalysis: z.string().describe("Full analysis of how macros (protein, carbs, fat, calories) correlate with WHOOP recovery, strain, sleep, and weight changes. Include backward-looking diet impact and forward-looking predictions."),
@@ -55,6 +55,7 @@ interface InsightInput {
     protein: number | null;
     carbs: number | null;
     totalFat: number | null;
+    estimated?: boolean;
   }[];
   activityData?: {
     date: string;
@@ -127,7 +128,7 @@ ${weightData.map((w) => `- ${w.date}: ${kgToLbs(w.weightKg)} lbs${w.bodyFatPct ?
     prompt += `
 
 ### Nutrition (from Apple Health)
-${nutritionData.map((n) => `- ${n.date}: ${n.calories ? Math.round(n.calories) + " kcal" : "not logged"}, Protein ${n.protein ? Math.round(n.protein) + "g" : "N/A"}, Carbs ${n.carbs ? Math.round(n.carbs) + "g" : "N/A"}, Fat ${n.totalFat ? Math.round(n.totalFat) + "g" : "N/A"}`).join("\n")}`;
+${nutritionData.map((n) => `- ${n.date}: ${n.calories ? Math.round(n.calories) + " kcal" : "not logged"}, Protein ${n.protein ? Math.round(n.protein) + "g" : "N/A"}, Carbs ${n.carbs ? Math.round(n.carbs) + "g" : "N/A"}, Fat ${n.totalFat ? Math.round(n.totalFat) + "g" : "N/A"}${n.estimated ? " (estimated from median of logged days)" : ""}`).join("\n")}`;
   } else {
     prompt += `
 
