@@ -59,15 +59,12 @@ export async function POST(request: NextRequest) {
       .filter((s) => s.score_state === "SCORED")
       .map((s) => {
         const date = s.end.split("T")[0];
-        // Calculate from sleep stage times, or fall back to in-bed minus awake
-        const stageSleep =
-          (s.score.total_light_sleep_time_milli ?? 0) +
-          (s.score.total_slow_wave_sleep_time_milli ?? 0) +
-          (s.score.total_rem_sleep_time_milli ?? 0);
-        const inBedMinusAwake =
-          (s.score.total_in_bed_time_milli ?? 0) - (s.score.total_awake_time_milli ?? 0);
-        const totalSleep = stageSleep > 0 ? stageSleep : Math.max(inBedMinusAwake, 0);
-        console.log(`Sleep ${date}: stages=${stageSleep}ms, inBed-awake=${inBedMinusAwake}ms, total=${totalSleep}ms (${(totalSleep/3600000).toFixed(1)}h)`);
+        const ss = (s.score as Record<string, unknown>).stage_summary as Record<string, number> | undefined;
+        const totalSleep = ss
+          ? (ss.total_light_sleep_time_milli ?? 0) +
+            (ss.total_slow_wave_sleep_time_milli ?? 0) +
+            (ss.total_rem_sleep_time_milli ?? 0)
+          : 0;
         return [date, {
           performance: s.score.sleep_performance_percentage,
           durationMs: totalSleep,
