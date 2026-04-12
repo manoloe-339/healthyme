@@ -49,8 +49,9 @@ export async function POST(request: NextRequest) {
   const leanMassMetric = getMetric(metrics, "lean_body_mass");
 
   if (weightMetric?.data?.length) {
-    const isLbs = weightMetric.units?.toLowerCase().includes("lb") ||
-      (weightMetric.data[0]?.qty > 140);
+    const unitStr = (weightMetric.units ?? "").toLowerCase();
+    const isLbs = unitStr.includes("lb") || unitStr.includes("pound") || unitStr === "lbs";
+    console.log(`Weight metric units: "${weightMetric.units}", isLbs: ${isLbs}`);
 
     const bodyFatByDate = bodyFatMetric ? latestByDate(bodyFatMetric.data) : new Map();
     const leanMassByDate = leanMassMetric ? latestByDate(leanMassMetric.data) : new Map();
