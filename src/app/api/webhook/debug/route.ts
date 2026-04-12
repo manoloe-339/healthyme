@@ -2,14 +2,23 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
-
-  // Extract just the metric names and their units/data counts
   const metrics = body.data?.metrics ?? body.metrics ?? [];
-  const summary = metrics.map((m: { name: string; units: string; data?: unknown[] }) => ({
-    name: m.name,
-    units: m.units,
-    dataPoints: m.data?.length ?? 0,
-  }));
+
+  // Show full data for key metrics, summary for the rest
+  const keyMetrics = ["step_count", "active_energy", "apple_exercise_time", "weight_body_mass"];
+
+  const summary = metrics.map((m: Record<string, unknown>) => {
+    const isKey = keyMetrics.includes(m.name as string);
+    const data = m.data as { date: string; qty: number; source?: string }[];
+    return {
+      name: m.name,
+      units: m.units,
+      dataPoints: data?.length ?? 0,
+      ...(isKey && data?.length <= 20
+        ? { data: data.slice(0, 10) }
+        : { sampleValue: data?.[0]?.qty }),
+    };
+  });
 
   return NextResponse.json({ metricCount: metrics.length, metrics: summary });
 }
