@@ -31,7 +31,7 @@
     "window": "11am-2pm daily",
     "orientation": "Low-carb, no strict elimination",
     "decisionFilter": "Protein-to-calorie ratio is the primary food choice metric",
-    "loggingHabit": "Does not always log meals. When nutrition data is missing for a day, assume he ate similar to the most recent logged day — do NOT assume he skipped eating or fasted."
+    "loggingHabit": "Does not always log meals. When nutrition data is missing for a day, assume he ate similar to the average of the fully logged days in the window — not the immediate prior day (which may be an outlier). Do NOT assume he skipped eating or fasted."
   },
   "proteinStrategy": {
     "dailyMinimum": "120-130g",
