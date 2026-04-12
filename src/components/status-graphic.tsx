@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getPaceStatus, getWeightTrends, BASELINE, MILESTONES } from "@/lib/pace";
+import { getPaceStatus, getWeightTrends, BASELINE, MILESTONES, getNextMilestone } from "@/lib/pace";
 
 interface Props {
   weights: { date: string; weightLbs: number }[];
@@ -10,10 +10,10 @@ interface Props {
   proteinTarget?: number;
 }
 
-const STATUS_COLORS = {
-  green: { bg: "bg-green-500", text: "text-green-400", glow: "shadow-green-500/30" },
-  yellow: { bg: "bg-yellow-500", text: "text-yellow-400", glow: "shadow-yellow-500/30" },
-  red: { bg: "bg-red-500", text: "text-red-400", glow: "shadow-red-500/30" },
+const PACE_TEXT_COLOR = {
+  green: "text-green-400",
+  yellow: "text-yellow-400",
+  red: "text-red-400",
 };
 
 const TILE_COLORS = {
@@ -33,51 +33,45 @@ function Confetti() {
     rotation: Math.random() * 360,
     size: 4 + Math.random() * 6,
   }));
-
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none z-10">
       {pieces.map((p) => (
-        <div
-          key={p.id}
-          className="absolute animate-confetti"
-          style={{
-            left: `${p.left}%`,
-            top: "-10px",
-            width: p.size,
-            height: p.size * 0.6,
-            backgroundColor: p.color,
-            borderRadius: "2px",
-            transform: `rotate(${p.rotation}deg)`,
-            animationDelay: `${p.delay}s`,
-            animationDuration: `${p.duration}s`,
-          }}
-        />
+        <div key={p.id} className="absolute animate-confetti" style={{
+          left: `${p.left}%`, top: "-10px", width: p.size, height: p.size * 0.6,
+          backgroundColor: p.color, borderRadius: "2px",
+          transform: `rotate(${p.rotation}deg)`,
+          animationDelay: `${p.delay}s`, animationDuration: `${p.duration}s`,
+        }} />
       ))}
     </div>
   );
 }
 
-function MilestoneGauge({ pctComplete, currentWeight, nextMilestone, paceStatus }: {
+function MilestoneGauge({ pctComplete, currentWeight, nextMilestone, paceStatus, lbsToGo }: {
   pctComplete: number;
   currentWeight: number;
-  nextMilestone: { weight: number; label: string };
+  nextMilestone: { weight: number; label: string; date: string };
   paceStatus: "green" | "yellow" | "red";
+  lbsToGo: number;
 }) {
   const [animatedPct, setAnimatedPct] = useState(0);
-
   useEffect(() => {
     const timer = setTimeout(() => setAnimatedPct(Math.min(pctComplete, 100)), 100);
     return () => clearTimeout(timer);
   }, [pctComplete]);
 
-  const radius = 75;
-  const cx = 85;
-  const cy = 80;
+  const radius = 90;
+  const cx = 110;
+  const cy = 100;
   const circumference = Math.PI * radius;
   const strokeOffset = circumference - (animatedPct / 100) * circumference;
-
   const arcColor = paceStatus === "green" ? "#4ade80" : paceStatus === "yellow" ? "#facc15" : "#ef4444";
 
+  // Count completed milestones
+  const completed = MILESTONES.filter((m) => currentWeight <= m.weight).length;
+  const total = MILESTONES.length;
+
+  // Milestone dots along bottom
   const totalRange = BASELINE.startWeight - BASELINE.goalWeight;
   const milestoneAngles = MILESTONES.map((m) => {
     const pct = (BASELINE.startWeight - m.weight) / totalRange;
@@ -86,66 +80,69 @@ function MilestoneGauge({ pctComplete, currentWeight, nextMilestone, paceStatus 
 
   return (
     <div className="flex flex-col items-center">
-      <svg width="170" height="90" viewBox="0 0 170 90">
+      <svg width="220" height="120" viewBox="0 0 220 120">
+        {/* Background arc */}
         <path
           d={`M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}`}
-          fill="none"
-          stroke="rgba(255,255,255,0.08)"
-          strokeWidth="8"
-          strokeLinecap="round"
+          fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="10" strokeLinecap="round"
         />
+        {/* Progress arc */}
         <path
           d={`M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}`}
-          fill="none"
-          stroke={arcColor}
-          strokeWidth="8"
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={strokeOffset}
+          fill="none" stroke={arcColor} strokeWidth="10" strokeLinecap="round"
+          strokeDasharray={circumference} strokeDashoffset={strokeOffset}
           className="transition-all duration-1000 ease-out"
         />
+        {/* Milestone dots on arc */}
         {milestoneAngles.map((m, i) => {
           const rad = (m.angle * Math.PI) / 180;
           const x = cx + radius * Math.cos(rad);
           const y = cy - radius * Math.sin(rad);
           const hit = currentWeight <= m.weight;
-          return (
-            <circle key={i} cx={x} cy={y} r="3"
-              fill={hit ? "#4ade80" : "rgba(255,255,255,0.2)"}
-            />
-          );
+          return <circle key={i} cx={x} cy={y} r="4" fill={hit ? "#4ade80" : "rgba(255,255,255,0.15)"} />;
         })}
-        {/* Percentage in center of arc */}
-        <text x={cx} y={cy - 15} textAnchor="middle" fill="#a1a1aa" fontSize="22" fontWeight="bold" fontFamily="monospace">
-          {pctComplete.toFixed(0)}%
+        {/* Milestone label at top */}
+        <text x={cx} y={30} textAnchor="middle" fill="#71717a" fontSize="11" letterSpacing="2">
+          MILESTONE {completed + 1 <= total ? completed + 1 : total}
         </text>
-        {/* Next milestone below */}
-        <text x={cx} y={cy} textAnchor="middle" fill="#71717a" fontSize="10">
-          {nextMilestone.label} · {nextMilestone.weight} lbs
+        {/* Target weight large in center */}
+        <text x={cx} y={65} textAnchor="middle" fill="#fafafa" fontSize="32" fontWeight="bold" fontFamily="monospace">
+          {nextMilestone.weight}
+        </text>
+        {/* Milestone date */}
+        <text x={cx} y={82} textAnchor="middle" fill="#71717a" fontSize="11">
+          {nextMilestone.label}
+        </text>
+        {/* Percent complete */}
+        <text x={cx} y={97} textAnchor="middle" fill={arcColor} fontSize="11" fontWeight="bold">
+          {pctComplete.toFixed(0)}% COMPLETE
         </text>
       </svg>
+      {/* Below arc details */}
+      <div className="text-center -mt-1 space-y-1">
+        <p className="text-sm text-zinc-400 font-mono">
+          <span className="font-bold text-zinc-200">{lbsToGo.toFixed(1)}</span> lbs to go
+        </p>
+        <p className="text-[10px] text-zinc-600">
+          {completed} of {total} milestones completed · {pctComplete.toFixed(1)}% overall
+        </p>
+      </div>
     </div>
   );
 }
 
 function LogStreak({ nutritionDates }: { nutritionDates: string[] }) {
   if (nutritionDates.length === 0) return null;
-
   const sorted = [...nutritionDates].sort().reverse();
   const today = new Date().toISOString().split("T")[0];
   let streak = 0;
   const checkDate = new Date(today + "T12:00:00");
-
   for (let i = 0; i < 90; i++) {
     const dateStr = checkDate.toISOString().split("T")[0];
-    if (sorted.includes(dateStr)) {
-      streak++;
-    } else if (i > 0) {
-      break;
-    }
+    if (sorted.includes(dateStr)) { streak++; }
+    else if (i > 0) { break; }
     checkDate.setDate(checkDate.getDate() - 1);
   }
-
   return (
     <div className="text-center">
       <span className="text-xs text-zinc-500">
@@ -159,15 +156,12 @@ function ProteinIndicator({ current, target }: { current: number | null; target:
   if (current === null) return null;
   const hit = current >= target;
   const pct = Math.min((current / target) * 100, 100);
-
   return (
     <div className="flex items-center gap-3 px-3 py-2 rounded-lg border bg-zinc-900/50 border-zinc-800">
       <div className="flex-1">
         <div className="h-2 rounded-full bg-zinc-800 overflow-hidden">
-          <div
-            className={`h-full rounded-full transition-all duration-500 ${hit ? "bg-green-500" : "bg-yellow-500"}`}
-            style={{ width: `${pct}%` }}
-          />
+          <div className={`h-full rounded-full transition-all duration-500 ${hit ? "bg-green-500" : "bg-yellow-500"}`}
+            style={{ width: `${pct}%` }} />
         </div>
       </div>
       <p className={`text-lg font-mono font-bold ${hit ? "text-green-400" : "text-yellow-400"}`}>
@@ -189,7 +183,7 @@ export function StatusGraphic({ weights, nutritionDates = [], todayProtein = nul
 
   const pace = getPaceStatus(latest.weightLbs, today);
   const trends = getWeightTrends(weights, today);
-  const colors = STATUS_COLORS[pace.status];
+  const paceColor = PACE_TEXT_COLOR[pace.status];
 
   useEffect(() => {
     const stored = localStorage.getItem("healthyme_last_weight");
@@ -200,10 +194,12 @@ export function StatusGraphic({ weights, nutritionDates = [], todayProtein = nul
         setTimeout(() => setShowConfetti(false), 3000);
       }
     }
-    if (latest) {
-      localStorage.setItem("healthyme_last_weight", latest.weightLbs.toString());
-    }
+    if (latest) localStorage.setItem("healthyme_last_weight", latest.weightLbs.toString());
   }, [latest]);
+
+  // Get the milestone with its date for the gauge
+  const nextMs = getNextMilestone(latest.weightLbs);
+  const nextMsWithDate = MILESTONES.find((m) => m.weight === nextMs.weight) ?? MILESTONES[0];
 
   return (
     <div className="space-y-3 relative">
@@ -212,19 +208,16 @@ export function StatusGraphic({ weights, nutritionDates = [], todayProtein = nul
       {/* Log streak */}
       <LogStreak nutritionDates={nutritionDates} />
 
-      {/* Current Weight — BIG */}
-      <div className="flex flex-col items-center py-2">
-        <div className={`w-3 h-3 rounded-full ${colors.bg} shadow-lg ${colors.glow} animate-pulse mb-2`} />
-        <p className={`text-6xl sm:text-7xl font-mono font-bold ${colors.text} tracking-tighter leading-none`}>
+      {/* TOP: Current Weight — VERY LARGE GREEN */}
+      <div className="flex flex-col items-center py-1">
+        <p className={`text-7xl sm:text-8xl font-mono font-bold text-green-400 tracking-tighter leading-none`}>
           {latest.weightLbs.toFixed(1)}
         </p>
         <p className="text-sm text-zinc-500 mt-1">lbs</p>
-        <div className="flex gap-3 mt-2 text-xs text-zinc-500">
-          <span>{pace.lbsToMilestone.toFixed(1)} to {pace.nextMilestone.label}</span>
-          <span>·</span>
-          <span>{pace.daysToMilestone}d left</span>
-        </div>
-        <p className={`text-xs mt-1 ${colors.text}`}>
+        <p className="text-xs text-zinc-500 mt-2">
+          {pace.lbsToMilestone.toFixed(1)} to {pace.nextMilestone.label} · {pace.daysToMilestone}d left
+        </p>
+        <p className={`text-xs mt-0.5 font-medium ${paceColor}`}>
           {pace.status === "green" ? "Ahead of pace" : pace.status === "yellow" ? "Close to pace" : "Behind pace"}
           {" · "}{pace.requiredPacePerWeek.toFixed(1)} lbs/wk needed
         </p>
@@ -233,7 +226,7 @@ export function StatusGraphic({ weights, nutritionDates = [], todayProtein = nul
       {/* Protein indicator */}
       <ProteinIndicator current={todayProtein} target={proteinTarget} />
 
-      {/* Weight Trend Strip — BIGGER numbers */}
+      {/* TREND TILES */}
       {trends && (
         <div className="grid grid-cols-4 gap-1.5">
           <div className={`rounded-lg border px-1 py-2 text-center ${TILE_COLORS[trends.lost7.status]}`}>
@@ -255,12 +248,13 @@ export function StatusGraphic({ weights, nutritionDates = [], todayProtein = nul
         </div>
       )}
 
-      {/* Milestone Gauge */}
+      {/* MILESTONE GAUGE */}
       <MilestoneGauge
         pctComplete={pace.pctComplete}
         currentWeight={latest.weightLbs}
-        nextMilestone={pace.nextMilestone}
+        nextMilestone={{ ...nextMsWithDate }}
         paceStatus={pace.status}
+        lbsToGo={pace.lbsToMilestone}
       />
     </div>
   );
