@@ -65,6 +65,7 @@ export async function POST() {
       date: today,
       weightTrend: insight.weightTrend,
       sleepCorrelation: insight.sleepCorrelation,
+      nutritionCorrelation: insight.nutritionCorrelation ?? null,
       workoutPrescription: insight.workoutPrescription,
       insightText: insight.insightText,
       recoveryScore: todayRecovery,
@@ -75,6 +76,7 @@ export async function POST() {
       set: {
         weightTrend: sql`excluded.weight_trend`,
         sleepCorrelation: sql`excluded.sleep_correlation`,
+        nutritionCorrelation: sql`excluded.nutrition_correlation`,
         workoutPrescription: sql`excluded.workout_prescription`,
         insightText: sql`excluded.insight_text`,
         recoveryScore: sql`excluded.recovery_score`,
