@@ -65,7 +65,6 @@ function ProteinIndicator({ current, target }: { current: number | null; target:
 
 export function StatusGraphic({ weights, nutritionDates = [], todayProtein = null, proteinTarget = 130 }: Props) {
   const [showConfetti, setShowConfetti] = useState(false);
-  const [animatedPct, setAnimatedPct] = useState(0);
 
   const today = new Date().toISOString().split("T")[0];
   const sorted = [...weights].sort((a, b) => a.date.localeCompare(b.date));
@@ -77,7 +76,6 @@ export function StatusGraphic({ weights, nutritionDates = [], todayProtein = nul
   const trends = getWeightTrends(weights, today);
   const paceColor = PACE_TEXT_COLOR[pace.status];
 
-  // Milestone info
   const nextMs = getNextMilestone(latest.weightLbs);
   const nextMsData = MILESTONES.find((m) => m.weight === nextMs.weight) ?? MILESTONES[0];
   const completed = MILESTONES.filter((m) => latest.weightLbs <= m.weight).length;
@@ -94,24 +92,26 @@ export function StatusGraphic({ weights, nutritionDates = [], todayProtein = nul
     checkDate.setDate(checkDate.getDate() - 1);
   }
 
-  // Gauge math
-  const radius = 100;
-  const cx = 130;
-  const cy = 110;
+  // Segment-based arc
+  const allPoints = [
+    { weight: BASELINE.startWeight, label: "Start", date: BASELINE.startDate },
+    ...MILESTONES,
+  ];
+  const nextIdx = allPoints.findIndex((m) => latest.weightLbs > m.weight);
+  const segStart = nextIdx > 0 ? allPoints[nextIdx - 1].weight : BASELINE.startWeight;
+  const segEnd = nextMsData.weight;
+  const segRange = segStart - segEnd;
+  const segProgress = segRange > 0 ? Math.min(((segStart - latest.weightLbs) / segRange) * 100, 100) : 0;
+
+  const radius = 120;
+  const cx = 150;
+  const cy = 130;
   const circumference = Math.PI * radius;
-  const strokeOffset = circumference - (animatedPct / 100) * circumference;
   const arcColor = pace.status === "green" ? "#4ade80" : pace.status === "yellow" ? "#facc15" : "#ef4444";
 
-  const totalRange = BASELINE.startWeight - BASELINE.goalWeight;
-  const milestoneAngles = MILESTONES.map((m) => {
-    const pct = (BASELINE.startWeight - m.weight) / totalRange;
-    return { ...m, angle: 180 - pct * 180 };
-  });
-
-  useEffect(() => {
-    const timer = setTimeout(() => setAnimatedPct(1), 100); // trigger animation
-    return () => clearTimeout(timer);
-  }, []);
+  // Target dot position (right end of arc)
+  const targetX = cx + radius;
+  const targetY = cy;
 
   useEffect(() => {
     const stored = localStorage.getItem("healthyme_last_weight");
@@ -130,27 +130,52 @@ export function StatusGraphic({ weights, nutritionDates = [], todayProtein = nul
       {showConfetti && <Confetti />}
 
       {/* Log streak */}
-      <p className="text-center text-xs text-zinc-500 mb-3">
+      <p className="text-center text-xs text-zinc-500 mb-1">
         {streak > 0 ? `${streak} day${streak !== 1 ? "s" : ""} logged` : "Not logged today"}
       </p>
 
-      {/* Current Weight */}
+      {/* Arc + Weight — unified */}
       <div className="flex flex-col items-center">
-        <p className="text-7xl sm:text-8xl font-mono font-bold text-green-400 tracking-tighter leading-none">
-          {latest.weightLbs.toFixed(1)}
-        </p>
-        <p className="text-sm text-zinc-500 mt-1">lbs</p>
-        <p className="text-xs text-zinc-500 mt-2">
-          {pace.lbsToMilestone.toFixed(1)} to {pace.nextMilestone.label} · {pace.daysToMilestone}d left
-        </p>
-        <p className={`text-xs mt-0.5 font-medium ${paceColor}`}>
-          {pace.status === "green" ? "Ahead of pace" : pace.status === "yellow" ? "Close to pace" : "Behind pace"}
-          {" · "}{pace.requiredPacePerWeek.toFixed(1)} lbs/wk needed
-        </p>
+        <svg width="300" height="160" viewBox="0 0 300 160" className="w-full max-w-[320px]">
+          {/* Background arc */}
+          <path
+            d={`M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}`}
+            fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="10" strokeLinecap="round"
+          />
+          {/* Progress arc */}
+          <path
+            d={`M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}`}
+            fill="none" stroke={arcColor} strokeWidth="10" strokeLinecap="round"
+            strokeDasharray={circumference}
+            strokeDashoffset={circumference - (segProgress / 100) * circumference}
+            className="transition-all duration-1000 ease-out"
+          />
+          {/* Target gold dot at right end */}
+          <circle cx={targetX} cy={targetY} r="7" fill="#facc15" opacity="0.9" />
+          <circle cx={targetX} cy={targetY} r="3.5" fill="#fef08a" />
+
+          {/* Weight — large, inside the arc */}
+          <text x={cx} y={cy - 30} textAnchor="middle" fill="#4ade80" fontSize="52" fontWeight="bold" fontFamily="monospace">
+            {latest.weightLbs.toFixed(1)}
+          </text>
+          {/* lbs */}
+          <text x={cx} y={cy - 10} textAnchor="middle" fill="#71717a" fontSize="14">
+            lbs
+          </text>
+          {/* Pace line */}
+          <text x={cx} y={cy + 10} textAnchor="middle" fill={arcColor} fontSize="11" fontWeight="500">
+            {pace.status === "green" ? "Ahead of pace" : pace.status === "yellow" ? "Close to pace" : "Behind pace"} · {pace.requiredPacePerWeek.toFixed(1)} lbs/wk
+          </text>
+
+          {/* Target weight next to gold dot */}
+          <text x={targetX + 2} y={targetY + 20} textAnchor="middle" fill="#facc15" fontSize="14" fontWeight="bold" fontFamily="monospace">
+            {segEnd}
+          </text>
+        </svg>
       </div>
 
       {/* Protein */}
-      <div className="mt-3">
+      <div className="mt-1">
         <ProteinIndicator current={todayProtein} target={proteinTarget} />
       </div>
 
@@ -176,76 +201,15 @@ export function StatusGraphic({ weights, nutritionDates = [], todayProtein = nul
         </div>
       )}
 
-      {/* Milestone Gauge — segment-based */}
-      {(() => {
-        // Find segment: previous milestone (or baseline) → next milestone
-        const allPoints = [
-          { weight: BASELINE.startWeight, label: "Start", date: BASELINE.startDate },
-          ...MILESTONES,
-        ];
-        const nextIdx = allPoints.findIndex((m) => latest.weightLbs > m.weight);
-        const segStart = nextIdx > 0 ? allPoints[nextIdx - 1].weight : BASELINE.startWeight;
-        const segEnd = nextMsData.weight;
-        const segRange = segStart - segEnd;
-        const segProgress = segRange > 0 ? Math.min(((segStart - latest.weightLbs) / segRange) * 100, 100) : 0;
-        const segOffset = circumference - (animatedPct > 0 ? segProgress : 0) / 100 * circumference;
-
-        // Target marker position (end of arc = right side)
-        const targetRad = 0; // 0 degrees = right side of arc
-        const targetX = cx + radius * Math.cos(targetRad);
-        const targetY = cy - radius * Math.sin(targetRad);
-
-        return (
-          <div className="flex flex-col items-center mt-4">
-            <svg width="260" height="140" viewBox="0 0 260 140" className="w-full max-w-[300px]">
-              {/* Background arc */}
-              <path
-                d={`M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}`}
-                fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="12" strokeLinecap="round"
-              />
-              {/* Progress arc — fills from left (current) toward right (target) */}
-              <path
-                d={`M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}`}
-                fill="none" stroke={arcColor} strokeWidth="12" strokeLinecap="round"
-                strokeDasharray={circumference}
-                strokeDashoffset={circumference - (segProgress / 100) * circumference}
-                className="transition-all duration-1000 ease-out"
-              />
-              {/* Target marker — gold dot at end of arc */}
-              <circle cx={targetX} cy={targetY} r="8" fill="#facc15" opacity="0.9" />
-              <circle cx={targetX} cy={targetY} r="4" fill="#fef08a" />
-              {/* Target weight label next to gold dot */}
-              <text x={targetX + 14} y={targetY + 5} textAnchor="start" fill="#facc15" fontSize="16" fontWeight="bold" fontFamily="monospace">
-                {segEnd}
-              </text>
-              {/* Start weight at left */}
-              <text x={cx - radius - 5} y={cy + 16} textAnchor="end" fill="#71717a" fontSize="11" fontFamily="monospace">
-                {Math.round(segStart)}
-              </text>
-              {/* Milestone label centered */}
-              <text x={cx} y={30} textAnchor="middle" fill="#71717a" fontSize="10" letterSpacing="2" fontWeight="500">
-                MILESTONE {completed + 1 <= total ? completed + 1 : total}
-              </text>
-              {/* Segment percent in center */}
-              <text x={cx} y={65} textAnchor="middle" fill="#fafafa" fontSize="28" fontWeight="bold" fontFamily="monospace">
-                {segProgress.toFixed(0)}%
-              </text>
-              {/* Date */}
-              <text x={cx} y={85} textAnchor="middle" fill="#71717a" fontSize="12">
-                {nextMsData.label}
-              </text>
-              {/* Lbs to go */}
-              <text x={cx} y={102} textAnchor="middle" fill={arcColor} fontSize="12" fontWeight="bold">
-                {pace.lbsToMilestone.toFixed(1)} lbs to go
-              </text>
-            </svg>
-
-            <p className="text-[10px] text-zinc-600 mt-0 mb-1">
-              {completed} of {total} milestones completed · {pace.pctComplete.toFixed(1)}% overall
-            </p>
-          </div>
-        );
-      })()}
+      {/* Bottom stats */}
+      <div className="text-center mt-3 space-y-0.5">
+        <p className="text-sm text-zinc-400 font-mono">
+          <span className="font-bold text-zinc-200">{pace.lbsToMilestone.toFixed(1)}</span> lbs to go · {pace.nextMilestone.label} · {pace.daysToMilestone}d left
+        </p>
+        <p className="text-[10px] text-zinc-600">
+          {completed} of {total} milestones completed · {pace.pctComplete.toFixed(1)}% overall
+        </p>
+      </div>
     </div>
   );
 }
