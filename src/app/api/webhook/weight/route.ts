@@ -14,10 +14,15 @@ function getMetric(metrics: Record<string, unknown>[], name: string) {
   ) as { name: string; units: string; data: { date: string; qty: number }[] } | undefined;
 }
 
+function parseDate(dateStr: string): string {
+  // Handle both "2025-01-20T14:30:00Z" and "2025-01-20 14:30:00 Z"
+  return String(dateStr).split(/[T ]/)[0];
+}
+
 function sumByDate(data: { date: string; qty: number }[]): Map<string, number> {
   const map = new Map<string, number>();
   for (const entry of data) {
-    const date = String(entry.date).split("T")[0];
+    const date = parseDate(entry.date);
     map.set(date, (map.get(date) ?? 0) + (entry.qty ?? 0));
   }
   return map;
@@ -26,7 +31,7 @@ function sumByDate(data: { date: string; qty: number }[]): Map<string, number> {
 function latestByDate(data: { date: string; qty: number }[]): Map<string, number> {
   const map = new Map<string, number>();
   for (const entry of data) {
-    const date = String(entry.date).split("T")[0];
+    const date = parseDate(entry.date);
     map.set(date, entry.qty ?? 0);
   }
   return map;
@@ -58,7 +63,7 @@ export async function POST(request: NextRequest) {
     const leanMassIsLbs = leanMassMetric?.units?.toLowerCase().includes("lb");
 
     for (const entry of weightMetric.data) {
-      const date = String(entry.date).split("T")[0];
+      const date = parseDate(entry.date);
       const weightKg = isLbs ? lbsToKg(entry.qty) : entry.qty;
       if (!date || !weightKg) continue;
 
@@ -92,7 +97,7 @@ export async function POST(request: NextRequest) {
 
   const nutritionDates = new Set<string>();
   [calorieMetric, proteinMetric, carbMetric, fatMetric, fiberMetric, sugarMetric].forEach((m) => {
-    m?.data?.forEach((d) => nutritionDates.add(String(d.date).split("T")[0]));
+    m?.data?.forEach((d) => nutritionDates.add(parseDate(d.date)));
   });
 
   if (nutritionDates.size > 0) {
@@ -139,7 +144,7 @@ export async function POST(request: NextRequest) {
 
   const activityDates = new Set<string>();
   [stepMetric, activeEnergyMetric, exerciseMetric, flightsMetric, distanceMetric].forEach((m) => {
-    m?.data?.forEach((d) => activityDates.add(String(d.date).split("T")[0]));
+    m?.data?.forEach((d) => activityDates.add(parseDate(d.date)));
   });
 
   if (activityDates.size > 0) {
@@ -172,6 +177,9 @@ export async function POST(request: NextRequest) {
         });
     }
     results.activity = activityDates.size;
+    console.log("Steps by date:", Object.fromEntries(steps));
+    console.log("Active energy by date:", Object.fromEntries(active));
+    console.log("Exercise mins by date:", Object.fromEntries(exercise));
   }
 
   return NextResponse.json({ ok: true, results });
