@@ -46,6 +46,12 @@ export async function POST(request: NextRequest) {
     fetchSleep(accessToken, startDate, endDate),
   ]);
 
+  // Log raw sleep data for debugging
+  console.log(`Sleep records: ${sleeps.length}`);
+  sleeps.forEach((s) => {
+    console.log(`Sleep: end=${s.end}, score_state=${s.score_state}, score=${JSON.stringify(s.score).substring(0, 200)}`);
+  });
+
   // Index sleep by date (use the end time as the "night of" date)
   const sleepByDate = new Map(
     sleeps
@@ -66,12 +72,16 @@ export async function POST(request: NextRequest) {
 
   const db = getDb();
 
+  console.log("Sleep dates indexed:", Array.from(sleepByDate.keys()));
+  console.log("Recovery dates:", recoveries.map((r) => r.created_at.split("T")[0]));
+
   for (const rec of recoveries) {
     const date = rec.created_at.split("T")[0];
     const cycleForDate = cycles.find(
       (c) => c.created_at.split("T")[0] === date
     );
     const sleep = sleepByDate.get(date);
+    console.log(`Date ${date}: sleep match=${!!sleep}, durationMs=${sleep?.durationMs}`);
 
     await db
       .insert(whoopRecovery)
