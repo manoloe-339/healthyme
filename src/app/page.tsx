@@ -453,7 +453,7 @@ export default function Dashboard() {
               <p className="text-[9px] sm:text-[10px] uppercase tracking-wider mt-0.5">Recovery</p>
               {latestRecovery && (
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-20">
-                  <div className="bg-zinc-900/95 backdrop-blur-sm border border-zinc-700 rounded-lg px-3 py-2 text-[10px] whitespace-nowrap space-y-0.5">
+                  <div className="bg-zinc-900/95 backdrop-blur-sm border border-zinc-700 rounded-lg px-2 py-1.5 text-[10px] space-y-0.5 max-w-[180px]">
                     <p className="text-zinc-200 font-medium">
                       {latestRecovery.recoveryScore >= 70
                         ? "Body is recovered. Push hard today."
@@ -476,7 +476,7 @@ export default function Dashboard() {
               <p className="text-[9px] sm:text-[10px] uppercase tracking-wider mt-0.5">Sleep</p>
               {latestRecovery && (
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-20">
-                  <div className="bg-zinc-900/95 backdrop-blur-sm border border-zinc-700 rounded-lg px-3 py-2 text-[10px] whitespace-nowrap space-y-0.5">
+                  <div className="bg-zinc-900/95 backdrop-blur-sm border border-zinc-700 rounded-lg px-2 py-1.5 text-[10px] space-y-0.5 max-w-[180px]">
                     <p className="text-zinc-200 font-medium">
                       {latestRecovery.sleepDurationMs
                         ? `${(latestRecovery.sleepDurationMs / 3600000).toFixed(1)}h sleep drove ${latestRecovery.sleepPerformance?.toFixed(0)}% score`
@@ -495,7 +495,7 @@ export default function Dashboard() {
               <p className="text-[9px] sm:text-[10px] uppercase tracking-wider mt-0.5">Weight</p>
               {latestWeight && (
                 <div className="absolute bottom-full right-0 mb-2 hidden group-hover:block z-20">
-                  <div className="bg-zinc-900/95 backdrop-blur-sm border border-zinc-700 rounded-lg px-3 py-2 text-[10px] whitespace-nowrap space-y-0.5">
+                  <div className="bg-zinc-900/95 backdrop-blur-sm border border-zinc-700 rounded-lg px-2 py-1.5 text-[10px] space-y-0.5 max-w-[180px]">
                     <p className="text-zinc-200 font-medium">
                       {currentLbs && currentLbs <= 209
                         ? "Milestone hit! On to 200."
