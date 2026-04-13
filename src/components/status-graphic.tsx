@@ -204,22 +204,32 @@ export function StatusGraphic({ weights, nutritionDates = [], todayProtein = nul
       {/* Trend Tiles */}
       {trends && (
         <div className="grid grid-cols-4 gap-1.5 mt-3">
-          <div className={`rounded-lg border px-1 py-2 text-center ${TILE_COLORS[trends.lost7.status]}`}>
-            <p className="text-xl sm:text-2xl font-mono font-bold">{trends.lost7.value?.toFixed(1) ?? "—"}</p>
-            <p className="text-[8px] uppercase tracking-wider mt-0.5">7d</p>
-          </div>
-          <div className={`rounded-lg border px-1 py-2 text-center ${TILE_COLORS[trends.lost30.status]}`}>
-            <p className="text-xl sm:text-2xl font-mono font-bold">{trends.lost30.value?.toFixed(1) ?? "—"}</p>
-            <p className="text-[8px] uppercase tracking-wider mt-0.5">30d</p>
-          </div>
-          <div className={`rounded-lg border px-1 py-2 text-center ${TILE_COLORS[trends.lost90.status]}`}>
-            <p className="text-xl sm:text-2xl font-mono font-bold">{trends.lost90.value?.toFixed(1) ?? "—"}</p>
-            <p className="text-[8px] uppercase tracking-wider mt-0.5">90d</p>
-          </div>
-          <div className={`rounded-lg border px-1 py-2 text-center ${TILE_COLORS[trends.sinceBaseline.status]}`}>
-            <p className="text-xl sm:text-2xl font-mono font-bold">{trends.sinceBaseline.value.toFixed(1)}</p>
-            <p className="text-[8px] uppercase tracking-wider mt-0.5">Feb 11</p>
-          </div>
+          {([
+            { data: trends.lost7, label: "7d" },
+            { data: trends.lost30, label: "30d" },
+            { data: trends.lost90, label: "90d" },
+            { data: { ...trends.sinceBaseline, actualDays: undefined, startDate: "2026-02-11" }, label: "Feb 11" },
+          ] as const).map(({ data, label }) => (
+            <div
+              key={label}
+              className={`rounded-lg border px-1 py-2 text-center relative group cursor-default ${TILE_COLORS[data.status]}`}
+            >
+              <p className="text-xl sm:text-2xl font-mono font-bold">{data.value?.toFixed(1) ?? "—"}</p>
+              <p className="text-[8px] uppercase tracking-wider mt-0.5">{label}</p>
+              {/* Tooltip on hover */}
+              {data.startWeight && (
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-20">
+                  <div className="bg-zinc-900/95 backdrop-blur-sm border border-zinc-700 rounded-lg px-3 py-2 text-[10px] whitespace-nowrap space-y-0.5">
+                    <p className="text-zinc-300">{data.startWeight.toFixed(1)} → {data.endWeight?.toFixed(1)} lbs</p>
+                    {data.actualDays && <p className="text-zinc-500">{data.actualDays} days</p>}
+                    {data.value !== null && data.actualDays && (
+                      <p className="text-zinc-400">{(data.value / (data.actualDays / 7)).toFixed(1)} lbs/wk</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
 

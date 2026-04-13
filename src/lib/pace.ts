@@ -96,24 +96,21 @@ export function getWeightTrends(
   const sorted = [...weights].sort((a, b) => a.date.localeCompare(b.date));
   const latest = sorted[sorted.length - 1].weightLbs;
 
-  function lostSince(daysAgo: number): { value: number; actualDays: number } | null {
+  function lostSince(daysAgo: number): { value: number; actualDays: number; startWeight: number; endWeight: number; startDate: string } | null {
     const cutoff = new Date(today + "T12:00:00");
     cutoff.setDate(cutoff.getDate() - daysAgo);
     const cutoffStr = cutoff.toISOString().split("T")[0];
 
-    // Find the entry closest to the cutoff date (first entry on or after cutoff)
     const entry = sorted.find((w) => w.date >= cutoffStr);
     if (!entry || entry.date === sorted[sorted.length - 1].date) {
-      // Only have the latest entry, or no entry in range
-      // Fall back to oldest entry if it covers at least half the window
       const oldest = sorted[0];
       const actualDays = daysBetween(oldest.date, today);
       if (actualDays < daysAgo * 0.7) return null;
-      return { value: oldest.weightLbs - latest, actualDays };
+      return { value: oldest.weightLbs - latest, actualDays, startWeight: oldest.weightLbs, endWeight: latest, startDate: oldest.date };
     }
     const actualDays = daysBetween(entry.date, today);
     if (actualDays < 1) return null;
-    return { value: entry.weightLbs - latest, actualDays };
+    return { value: entry.weightLbs - latest, actualDays, startWeight: entry.weightLbs, endWeight: latest, startDate: entry.date };
   }
 
   const sinceBaseline = BASELINE.startWeight - latest;
@@ -134,9 +131,9 @@ export function getWeightTrends(
   const lost90 = lostSince(90);
 
   return {
-    lost7: { value: lost7?.value ?? null, status: paceStatus(lost7, 7) },
-    lost30: { value: lost30?.value ?? null, status: paceStatus(lost30, 30) },
-    lost90: { value: lost90?.value ?? null, status: paceStatus(lost90, 90) },
-    sinceBaseline: { value: sinceBaseline, status: sinceBaseline > 0 ? "green" as const : "red" as const },
+    lost7: { value: lost7?.value ?? null, status: paceStatus(lost7, 7), startWeight: lost7?.startWeight, endWeight: lost7?.endWeight, actualDays: lost7?.actualDays, startDate: lost7?.startDate },
+    lost30: { value: lost30?.value ?? null, status: paceStatus(lost30, 30), startWeight: lost30?.startWeight, endWeight: lost30?.endWeight, actualDays: lost30?.actualDays, startDate: lost30?.startDate },
+    lost90: { value: lost90?.value ?? null, status: paceStatus(lost90, 90), startWeight: lost90?.startWeight, endWeight: lost90?.endWeight, actualDays: lost90?.actualDays, startDate: lost90?.startDate },
+    sinceBaseline: { value: sinceBaseline, status: sinceBaseline > 0 ? "green" as const : "red" as const, startWeight: BASELINE.startWeight, endWeight: latest },
   };
 }
