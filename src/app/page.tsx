@@ -456,12 +456,16 @@ export default function Dashboard() {
                   <div className="bg-zinc-900/95 backdrop-blur-sm border border-zinc-700 rounded-lg px-3 py-2 text-[10px] whitespace-nowrap space-y-0.5">
                     <p className="text-zinc-200 font-medium">
                       {latestRecovery.recoveryScore >= 70
-                        ? `HRV ${latestRecovery.hrvRmssd?.toFixed(0) ?? "?"}ms + ${latestRecovery.sleepDurationMs ? (latestRecovery.sleepDurationMs / 3600000).toFixed(1) : "?"}h sleep → green`
+                        ? "Body is recovered. Push hard today."
                         : latestRecovery.recoveryScore >= 50
-                        ? `HRV ${latestRecovery.hrvRmssd?.toFixed(0) ?? "?"}ms held back by sleep`
-                        : `Low HRV ${latestRecovery.hrvRmssd?.toFixed(0) ?? "?"}ms + poor sleep → red`}
+                        ? "Partially recovered. Go moderate."
+                        : "Body is stressed. Take it easy."}
                     </p>
-                    <p className="text-zinc-400">HRV {latestRecovery.hrvRmssd?.toFixed(0) ?? "—"}ms · RHR {latestRecovery.restingHeartRate?.toFixed(0) ?? "—"} · Strain {latestRecovery.strain?.toFixed(1) ?? "—"}</p>
+                    <p className="text-zinc-400">
+                      {latestRecovery.sleepDurationMs
+                        ? `${(latestRecovery.sleepDurationMs / 3600000).toFixed(1)}h sleep last night`
+                        : "No sleep data"}{latestRecovery.strain ? `, ${latestRecovery.strain.toFixed(1)} strain yesterday` : ""}
+                    </p>
                   </div>
                 </div>
               )}
