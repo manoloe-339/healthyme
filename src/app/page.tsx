@@ -454,10 +454,14 @@ export default function Dashboard() {
               {latestRecovery && (
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-20">
                   <div className="bg-zinc-900/95 backdrop-blur-sm border border-zinc-700 rounded-lg px-3 py-2 text-[10px] whitespace-nowrap space-y-0.5">
-                    <p className="text-zinc-300">HRV: {latestRecovery.hrvRmssd?.toFixed(0) ?? "—"} ms</p>
-                    <p className="text-zinc-300">RHR: {latestRecovery.restingHeartRate?.toFixed(0) ?? "—"} bpm</p>
-                    <p className="text-zinc-300">Strain: {latestRecovery.strain?.toFixed(1) ?? "—"}</p>
-                    <p className="text-zinc-500">{latestRecovery.recoveryScore >= 70 ? "Full session OK" : latestRecovery.recoveryScore >= 50 ? "Moderate intensity" : "Active recovery only"}</p>
+                    <p className="text-zinc-200 font-medium">
+                      {latestRecovery.recoveryScore >= 70
+                        ? `HRV ${latestRecovery.hrvRmssd?.toFixed(0) ?? "?"}ms + ${latestRecovery.sleepDurationMs ? (latestRecovery.sleepDurationMs / 3600000).toFixed(1) : "?"}h sleep → green`
+                        : latestRecovery.recoveryScore >= 50
+                        ? `HRV ${latestRecovery.hrvRmssd?.toFixed(0) ?? "?"}ms held back by sleep`
+                        : `Low HRV ${latestRecovery.hrvRmssd?.toFixed(0) ?? "?"}ms + poor sleep → red`}
+                    </p>
+                    <p className="text-zinc-400">HRV {latestRecovery.hrvRmssd?.toFixed(0) ?? "—"}ms · RHR {latestRecovery.restingHeartRate?.toFixed(0) ?? "—"} · Strain {latestRecovery.strain?.toFixed(1) ?? "—"}</p>
                   </div>
                 </div>
               )}
@@ -469,9 +473,14 @@ export default function Dashboard() {
               {latestRecovery && (
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-20">
                   <div className="bg-zinc-900/95 backdrop-blur-sm border border-zinc-700 rounded-lg px-3 py-2 text-[10px] whitespace-nowrap space-y-0.5">
-                    <p className="text-zinc-300">Duration: {latestRecovery.sleepDurationMs ? (latestRecovery.sleepDurationMs / 3600000).toFixed(1) + "h" : "—"}</p>
-                    <p className="text-zinc-300">Performance: {latestRecovery.sleepPerformance?.toFixed(0) ?? "—"}%</p>
-                    <p className="text-zinc-500">{latestRecovery.sleepDurationMs && latestRecovery.sleepDurationMs >= 27000000 ? "Target met (7.5h+)" : latestRecovery.sleepDurationMs && latestRecovery.sleepDurationMs >= 25200000 ? "Minimum met (7h)" : "Below 7h — recovery risk"}</p>
+                    <p className="text-zinc-200 font-medium">
+                      {latestRecovery.sleepDurationMs
+                        ? `${(latestRecovery.sleepDurationMs / 3600000).toFixed(1)}h sleep drove ${latestRecovery.sleepPerformance?.toFixed(0)}% score`
+                        : "No sleep duration data from WHOOP"}
+                    </p>
+                    <p className="text-zinc-400">
+                      {latestRecovery.sleepDurationMs && latestRecovery.sleepDurationMs >= 27000000 ? "7.5h+ target hit" : latestRecovery.sleepDurationMs && latestRecovery.sleepDurationMs >= 25200000 ? "7h minimum met, aim higher" : "Under 7h — hurting recovery"}
+                    </p>
                   </div>
                 </div>
               )}
@@ -481,12 +490,16 @@ export default function Dashboard() {
               <p className="text-xl sm:text-2xl font-mono font-bold">{currentLbs?.toFixed(1) ?? "—"}</p>
               <p className="text-[9px] sm:text-[10px] uppercase tracking-wider mt-0.5">Weight</p>
               {latestWeight && (
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-20">
+                <div className="absolute bottom-full right-0 mb-2 hidden group-hover:block z-20">
                   <div className="bg-zinc-900/95 backdrop-blur-sm border border-zinc-700 rounded-lg px-3 py-2 text-[10px] whitespace-nowrap space-y-0.5">
-                    <p className="text-zinc-300">BF: {latestWeight.bodyFatPct?.toFixed(1) ?? "—"}%</p>
-                    <p className="text-zinc-300">Lean: {latestWeight.leanBodyMassKg ? kgToLbs(latestWeight.leanBodyMassKg).toFixed(1) + " lbs" : "—"}</p>
-                    <p className="text-zinc-300">Next: 209 lbs (May 1)</p>
-                    <p className="text-zinc-500">{currentLbs ? (currentLbs - 209).toFixed(1) + " lbs to milestone" : ""}</p>
+                    <p className="text-zinc-200 font-medium">
+                      {currentLbs && currentLbs <= 209
+                        ? "Milestone hit! On to 200."
+                        : currentLbs && currentLbs <= 215
+                        ? `${(currentLbs - 209).toFixed(1)} to go at ${latestWeight.bodyFatPct?.toFixed(1) ?? "?"}% BF`
+                        : `${(currentLbs! - 209).toFixed(1)} to 209 — need ${((currentLbs! - 209) / 2.5).toFixed(0)} more weeks`}
+                    </p>
+                    <p className="text-zinc-400">BF {latestWeight.bodyFatPct?.toFixed(1) ?? "—"}% · Lean {latestWeight.leanBodyMassKg ? kgToLbs(latestWeight.leanBodyMassKg).toFixed(1) : "—"} lbs</p>
                   </div>
                 </div>
               )}
