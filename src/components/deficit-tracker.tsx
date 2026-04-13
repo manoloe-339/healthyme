@@ -180,13 +180,25 @@ export function DeficitTracker({ recovery, nutrition }: Props) {
       </p>
 
       {/* Weekly total */}
-      <div className="text-center">
-        <p className={`text-lg font-mono font-bold ${deficitColor(totalDeficit)}`}>
-          {Math.round(Math.abs(totalDeficit)).toLocaleString()} kcal
-        </p>
-        <p className="text-[10px] text-zinc-500">
-          weekly deficit{hasSlugDays || hasNoWhoop ? " (estimated)" : ""}
-        </p>
+      <div className="flex items-center justify-center gap-3">
+        <div className="text-center">
+          <p className={`text-lg font-mono font-bold ${deficitColor(totalDeficit)}`}>
+            {Math.round(Math.abs(totalDeficit)).toLocaleString()}
+          </p>
+          <p className="text-[10px] text-zinc-500">
+            actual{hasSlugDays || hasNoWhoop ? " (est)" : ""}
+          </p>
+        </div>
+        <p className="text-zinc-600 text-sm">/</p>
+        <div className="text-center">
+          <p className="text-lg font-mono font-bold text-zinc-500">
+            {(DEFICIT_TARGET * days.length).toLocaleString()}
+          </p>
+          <p className="text-[10px] text-zinc-600">
+            target
+          </p>
+        </div>
+        <p className="text-[10px] text-zinc-600 ml-1">kcal</p>
       </div>
 
       {/* Expandable daily breakdown */}
