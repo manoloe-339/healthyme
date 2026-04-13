@@ -145,7 +145,12 @@ No meals logged in this period. The client still ate (OMAD protocol) — there i
     prompt += `
 
 ### Daily Activity
-${activityData.map((a) => `- ${a.date}: ${a.steps ? a.steps.toLocaleString() + " steps" : "N/A"}, Active burn ${a.activeEnergy ? Math.round(a.activeEnergy) + " kcal" : "N/A"}`).join("\n")}`;
+IMPORTANT: Today's activity data is INCOMPLETE (still accumulating). Base step analysis and activity insights on YESTERDAY's completed data, not today's partial count.
+${activityData.map((a) => {
+    const today = new Date().toISOString().split("T")[0];
+    const isToday = a.date === today || a.date.startsWith(today);
+    return `- ${a.date}: ${a.steps ? a.steps.toLocaleString() + " steps" : "N/A"}, Active burn ${a.activeEnergy ? Math.round(a.activeEnergy) + " kcal" : "N/A"}${isToday ? " (INCOMPLETE — still today)" : ""}`;
+  }).join("\n")}`;
   }
 
   prompt += `
