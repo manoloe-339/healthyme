@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
-import { weightLog, dailyNutrition, dailyActivity } from "@/db/schema";
-import { sql } from "drizzle-orm";
+import { weightLog, dailyNutrition, dailyActivity, debugLog } from "@/db/schema";
+import { sql, lt } from "drizzle-orm";
 
 function lbsToKg(lbs: number): number {
   return lbs / 2.20462;
@@ -39,11 +39,44 @@ function latestByDate(data: { date: string; qty: number }[]): Map<string, number
 
 export const maxDuration = 60;
 
+async function logRequest(db: ReturnType<typeof getDb>, method: string, path: string, headers: string, bodyPreview: string, bodySize: number, responseStatus: number, responseBody: string, metricsFound: string) {
+  try {
+    await db.insert(debugLog).values({ method, path, headers, bodyPreview, bodySize, responseStatus, responseBody, metricsFound });
+    // Keep only last 20
+    const all = await db.select({ id: debugLog.id }).from(debugLog).orderBy(sql`id DESC`).limit(1).offset(20);
+    if (all.length > 0) {
+      await db.delete(debugLog).where(lt(debugLog.id, all[0].id));
+    }
+  } catch (e) {
+    console.error("Debug log error:", e);
+  }
+}
+
 export async function POST(request: NextRequest) {
-  const body = await request.json();
+  const rawBody = await request.text();
+  const reqHeaders = JSON.stringify({
+    "content-type": request.headers.get("content-type"),
+    "authorization": request.headers.get("authorization") ? "Bearer ***" : null,
+    "user-agent": request.headers.get("user-agent"),
+    "automation-name": request.headers.get("automation-name"),
+    "automation-id": request.headers.get("automation-id"),
+  });
+
+  let body;
+  try {
+    body = JSON.parse(rawBody);
+  } catch {
+    const db = getDb();
+    await logRequest(db, "POST", "/api/webhook/weight", reqHeaders, rawBody.substring(0, 500), rawBody.length, 400, "Invalid JSON", "");
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
   const metrics = body.data?.metrics ?? body.metrics ?? [];
+  const metricNames = metrics.map((m: { name: string }) => m.name).join(", ");
 
   if (!metrics.length) {
+    const db = getDb();
+    await logRequest(db, "POST", "/api/webhook/weight", reqHeaders, rawBody.substring(0, 500), rawBody.length, 400, "No metrics", metricNames);
     return NextResponse.json({ error: "No metrics" }, { status: 400 });
   }
 
@@ -187,5 +220,11 @@ export async function POST(request: NextRequest) {
     console.log("Exercise mins by date:", Object.fromEntries(exercise));
   }
 
-  return NextResponse.json({ ok: true, results });
+  const response = { ok: true, results };
+  // Sample first entry dates for each metric type
+  const dateSample = metrics.slice(0, 5).map((m: { name: string; data?: { date: string }[] }) =>
+    `${m.name}: ${m.data?.[0]?.date ?? "no data"}`
+  ).join(" | ");
+  await logRequest(db, "POST", "/api/webhook/weight", reqHeaders, dateSample, rawBody.length, 200, JSON.stringify(response), metricNames);
+  return NextResponse.json(response);
 }

@@ -61,6 +61,19 @@ export const whoopTokens = pgTable("whoop_tokens", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const debugLog = pgTable("debug_log", {
+  id: serial("id").primaryKey(),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  method: text("method"),
+  path: text("path"),
+  headers: text("headers"),
+  bodyPreview: text("body_preview"),
+  bodySize: integer("body_size"),
+  responseStatus: integer("response_status"),
+  responseBody: text("response_body"),
+  metricsFound: text("metrics_found"),
+});
+
 export const dailyInsight = pgTable("daily_insight", {
   id: serial("id").primaryKey(),
   date: date("date").notNull().unique(),
