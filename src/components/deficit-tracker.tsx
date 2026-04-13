@@ -11,8 +11,9 @@ const PROTOCOL_MIN = 1400;
 const PROTOCOL_MAX = 1600;
 const PROTEIN_TARGET = 130;
 const PROTEIN_WARN = 100;
-const DEFICIT_MIN = 1000;
-const DEFICIT_MAX = 1750;
+const DEFICIT_TARGET = 1375; // sweet spot for 2.5-3 lbs/week
+const DEFICIT_MIN = 1250; // 2.5 lbs/week
+const DEFICIT_MAX = 1500; // 3.0 lbs/week
 
 interface RecoveryEntry {
   date: string;
@@ -123,11 +124,36 @@ export function DeficitTracker({ recovery, nutrition }: Props) {
           <XAxis dataKey="dateShort" tick={{ fill: "#71717a", fontSize: 10 }} axisLine={{ stroke: "rgba(255,255,255,0.06)" }} />
           <YAxis tick={{ fill: "#71717a", fontSize: 10 }} axisLine={{ stroke: "rgba(255,255,255,0.06)" }} width={40} />
           <Tooltip
-            contentStyle={{ backgroundColor: "#18181b", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "#fafafa", fontSize: 11 }}
-            formatter={(value, name) => {
-              if (name === "caloriesIn") return [`${Math.round(value as number)} kcal`, "Calories In"];
-              if (name === "caloriesOut") return [`${Math.round(value as number)} kcal`, "Burned (WHOOP)"];
-              return [`${value}`, `${name}`];
+            contentStyle={{ backgroundColor: "#18181b", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "#fafafa", fontSize: 11, lineHeight: "1.6" }}
+            content={({ active, payload, label }) => {
+              if (!active || !payload?.length) return null;
+              const day = days.find((d) => d.dateShort === label);
+              if (!day) return null;
+              const deficit = day.deficit;
+              const onTrack = deficit !== null && deficit >= DEFICIT_MIN && deficit <= DEFICIT_MAX;
+              const deficitStatus = deficit === null ? "no data"
+                : deficit <= 0 ? "SURPLUS — no deficit"
+                : deficit < DEFICIT_MIN ? `too low (target ${DEFICIT_MIN}-${DEFICIT_MAX})`
+                : deficit > DEFICIT_MAX ? `too aggressive (target ${DEFICIT_MIN}-${DEFICIT_MAX})`
+                : "on track";
+              return (
+                <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-xs space-y-1">
+                  <p className="font-bold text-zinc-200">{label}{day.isSlug ? " (slug)" : ""}</p>
+                  <p className="text-blue-400">Burned: {day.caloriesOut ? `${Math.round(day.caloriesOut)} kcal` : "no WHOOP"}</p>
+                  <p className={day.isSlug ? "text-purple-400/60" : "text-green-400"}>Eaten: {Math.round(day.caloriesIn ?? 0)} kcal</p>
+                  <div className="border-t border-zinc-700 pt-1 mt-1">
+                    <p className={`font-bold ${deficit !== null && onTrack ? "text-green-400" : deficit !== null && deficit > 0 ? "text-yellow-400" : "text-red-400"}`}>
+                      Deficit: {deficit !== null ? `${Math.round(deficit)} kcal` : "—"}
+                    </p>
+                    <p className="text-zinc-500">{deficitStatus}</p>
+                    {day.protein !== null && (
+                      <p className={day.protein >= PROTEIN_TARGET ? "text-green-400" : "text-yellow-400"}>
+                        Protein: {Math.round(day.protein)}g {day.protein >= PROTEIN_TARGET ? "✓" : `(need ${PROTEIN_TARGET}g)`}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
             }}
           />
           <ReferenceLine y={PROTOCOL_MIN} stroke="#facc15" strokeDasharray="3 3" strokeOpacity={0.3} />
@@ -147,6 +173,11 @@ export function DeficitTracker({ recovery, nutrition }: Props) {
         <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-green-400 inline-block" /> Logged intake</span>
         <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-purple-400/30 inline-block" /> Slug (1500 est)</span>
       </div>
+
+      {/* Target range */}
+      <p className="text-center text-[9px] text-zinc-600">
+        Target deficit: {DEFICIT_MIN}-{DEFICIT_MAX} kcal/day (2.5-3 lbs/week) · Sweet spot: {DEFICIT_TARGET}
+      </p>
 
       {/* Weekly total */}
       <div className="text-center">
