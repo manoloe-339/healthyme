@@ -124,7 +124,7 @@ export function DeficitTracker({ recovery, nutrition }: Props) {
           <XAxis dataKey="dateShort" tick={{ fill: "#71717a", fontSize: 10 }} axisLine={{ stroke: "rgba(255,255,255,0.06)" }} />
           <YAxis tick={{ fill: "#71717a", fontSize: 10 }} axisLine={{ stroke: "rgba(255,255,255,0.06)" }} width={40} />
           <Tooltip
-            contentStyle={{ backgroundColor: "#18181b", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "#fafafa", fontSize: 11, lineHeight: "1.6" }}
+            cursor={{ fill: "rgba(255,255,255,0.03)" }}
             content={({ active, payload, label }) => {
               if (!active || !payload?.length) return null;
               const day = days.find((d) => d.dateShort === label);
@@ -137,7 +137,7 @@ export function DeficitTracker({ recovery, nutrition }: Props) {
                 : deficit > DEFICIT_MAX ? `too aggressive (target ${DEFICIT_MIN}-${DEFICIT_MAX})`
                 : "on track";
               return (
-                <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-xs space-y-1">
+                <div className="bg-zinc-900/95 backdrop-blur-sm border border-zinc-800 rounded-lg px-3 py-2 text-xs space-y-1">
                   <p className="font-bold text-zinc-200">{label}{day.isSlug ? " (slug)" : ""}</p>
                   <p className="text-blue-400">Burned: {day.caloriesOut ? `${Math.round(day.caloriesOut)} kcal` : "no WHOOP"}</p>
                   <p className={day.isSlug ? "text-purple-400/60" : "text-green-400"}>Eaten: {Math.round(day.caloriesIn ?? 0)} kcal</p>
