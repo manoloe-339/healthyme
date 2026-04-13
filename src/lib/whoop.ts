@@ -42,7 +42,11 @@ export interface WhoopSleepData {
 export interface WhoopCycleData {
   score: {
     strain: number;
+    kilojoule: number;
+    average_heart_rate: number;
+    max_heart_rate: number;
   };
+  start: string;
   created_at: string;
 }
 

@@ -122,6 +122,8 @@ export async function POST(request: NextRequest) {
         sleepPerformance: sleep?.performance ?? null,
         sleepDurationMs: sleep?.durationMs ?? null,
         strain: cycleForDate?.score?.strain ?? null,
+        kilojoules: cycleForDate?.score?.kilojoule ?? null,
+        caloriesBurned: cycleForDate?.score?.kilojoule ? Math.round(cycleForDate.score.kilojoule * 0.239) : null,
       })
       .onConflictDoUpdate({
         target: whoopRecovery.date,
@@ -132,6 +134,8 @@ export async function POST(request: NextRequest) {
           sleepPerformance: sql`excluded.sleep_performance`,
           sleepDurationMs: sql`excluded.sleep_duration_ms`,
           strain: sql`excluded.strain`,
+          kilojoules: sql`excluded.kilojoules`,
+          caloriesBurned: sql`excluded.calories_burned`,
           createdAt: sql`now()`,
         },
       });

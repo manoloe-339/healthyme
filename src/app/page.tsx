@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { CorrelationChart } from "@/components/correlation-chart";
 import { StatusGraphic } from "@/components/status-graphic";
+import { DeficitTracker } from "@/components/deficit-tracker";
 
 // --- Types ---
 
@@ -26,6 +27,7 @@ interface RecoveryEntry {
   sleepDurationMs: number | null;
   strain: number | null;
   restingHeartRate: number | null;
+  caloriesBurned: number | null;
 }
 
 interface WeightEntry {
@@ -398,6 +400,27 @@ export default function Dashboard() {
       >
         {insight?.correlationAnalysis ?? insight?.nutritionCorrelation ?? insight?.sleepCorrelation ?? "Generate an insight to see the full analysis."}
       </ExpandableSection>
+
+      {/* 1.5 DEFICIT TRACKER */}
+      {data?.recovery && data.recovery.some((r) => r.caloriesBurned) && (
+        <ExpandableSection
+          title="Deficit Tracker"
+          headline={insight?.correlationHeadline ?? "Sync WHOOP for calorie burn data."}
+          expandLabel="Full Analysis"
+          defaultContent={
+            <DeficitTracker
+              recovery={data.recovery.map((r) => ({
+                date: r.date,
+                caloriesBurned: r.caloriesBurned,
+                strain: r.strain,
+              }))}
+              nutrition={data.nutrition ?? []}
+            />
+          }
+        >
+          {insight?.correlationAnalysis ?? "Generate insight for full deficit analysis."}
+        </ExpandableSection>
+      )}
 
       {/* 2. STATUS STRIP */}
       <ExpandableSection

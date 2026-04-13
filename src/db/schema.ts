@@ -17,6 +17,8 @@ export const whoopRecovery = pgTable("whoop_recovery", {
   sleepPerformance: real("sleep_performance"),
   sleepDurationMs: integer("sleep_duration_ms"),
   strain: real("strain"),
+  kilojoules: real("kilojoules"),
+  caloriesBurned: real("calories_burned"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

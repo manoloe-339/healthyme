@@ -17,6 +17,7 @@ const insightSchema = z.object({
   statusHeadline: z.string().describe("Exactly 6 words summarizing current status across recovery/sleep/pace. E.g. 'Recovery yellow. Sleep ok. Pace ahead.' or 'Red recovery. Sleep tanked. Off pace.'"),
   coachHeadline: z.string().describe("Exactly 6 words — the single most important coaching message. E.g. 'Under-fueling is killing your recovery score.' or 'Sleep debt erasing your calorie deficit.'"),
   workoutHeadline: z.string().describe("Exactly 6 words for today's workout prescription. E.g. '58% recovery. Row easy, not hard.' or 'Green light. Push the heavy compounds.'"),
+  deficitHeadline: z.string().max(38).describe("Max 38 chars: key insight about calorie deficit pattern. E.g. '3200 deficit this week. On track.' or 'Under-eating. Raise to 1500 minimum.'"),
   detailHeadline: z.string().describe("Exactly 6 words highlighting a key data pattern. Use numerals not words for numbers (e.g. '2.5' not 'two point five'). Do NOT use simple oldest-minus-newest subtraction for weight. Analyze the full 7-day pattern: direction, stalls, reversals. E.g. 'Stalled mid-week then broke through.' or '3 nights under 7 hours. Fix.' or 'Steady drop, no stall. Keep going.'"),
 
   // Full analysis texts (hidden by default, shown on expand)
