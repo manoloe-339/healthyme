@@ -272,7 +272,7 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <main className="mx-auto max-w-3xl px-2 py-3 sm:p-6 space-y-3 sm:space-y-4">
+      <main className="mx-auto max-w-3xl px-2 py-3 sm:p-6 space-y-3 sm:space-y-4 overflow-x-hidden">
         <Skeleton className="h-10 w-48" />
         {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-32" />)}
       </main>
@@ -308,7 +308,7 @@ export default function Dashboard() {
   const currentLbs = latestWeight ? kgToLbs(latestWeight.weightKg) : null;
 
   return (
-    <main className="mx-auto max-w-3xl px-2 py-3 sm:p-6 space-y-3 sm:space-y-4">
+    <main className="mx-auto max-w-3xl px-2 py-3 sm:p-6 space-y-3 sm:space-y-4 overflow-x-hidden">
       {/* Header */}
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
