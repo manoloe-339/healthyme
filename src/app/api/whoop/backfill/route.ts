@@ -1,50 +1,18 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { fetchRecovery, fetchCycles, fetchSleep, refreshWhoopToken } from "@/lib/whoop";
+import { fetchRecovery, fetchCycles, fetchSleep } from "@/lib/whoop";
+import { getWhoopAccessToken } from "@/lib/whoop-tokens";
 import { getDb } from "@/db";
-import { whoopRecovery, whoopTokens } from "@/db/schema";
-import { sql, desc } from "drizzle-orm";
+import { whoopRecovery } from "@/db/schema";
+import { sql } from "drizzle-orm";
 
 export async function GET() {
   const db = getDb();
 
-  // Try cookies first, then DB tokens
-  const cookieStore = await cookies();
-  let accessToken = cookieStore.get("whoop_access_token")?.value;
-  const refreshToken = cookieStore.get("whoop_refresh_token")?.value;
-
-  if (!accessToken && refreshToken) {
-    const tokens = await refreshWhoopToken(refreshToken);
-    accessToken = tokens.access_token;
-  }
-
-  if (!accessToken) {
-    const stored = await db.select().from(whoopTokens).orderBy(desc(whoopTokens.updatedAt)).limit(1);
-    if (stored.length > 0) {
-      if (stored[0].expiresAt > new Date()) {
-        accessToken = stored[0].accessToken;
-      } else {
-        const tokens = await refreshWhoopToken(stored[0].refreshToken);
-        accessToken = tokens.access_token;
-        await db.insert(whoopTokens).values({
-          id: 1, accessToken: tokens.access_token,
-          refreshToken: tokens.refresh_token,
-          expiresAt: new Date(tokens.expires_at),
-        }).onConflictDoUpdate({
-          target: whoopTokens.id,
-          set: {
-            accessToken: sql`excluded.access_token`,
-            refreshToken: sql`excluded.refresh_token`,
-            expiresAt: sql`excluded.expires_at`,
-            updatedAt: sql`now()`,
-          },
-        });
-      }
-    }
-  }
-
-  if (!accessToken) {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  let accessToken: string;
+  try {
+    accessToken = await getWhoopAccessToken();
+  } catch (e) {
+    return NextResponse.json({ error: e instanceof Error ? e.message : "Auth failed" }, { status: 401 });
   }
 
   const startDate = "2026-04-01";

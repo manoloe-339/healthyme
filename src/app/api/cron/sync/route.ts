@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/db";
-import { whoopRecovery, whoopTokens, weightLog, dailyNutrition, dailyActivity, dailyInsight } from "@/db/schema";
-import { fetchRecovery, fetchCycles, fetchSleep, refreshWhoopToken } from "@/lib/whoop";
+import { whoopRecovery, weightLog, dailyNutrition, dailyActivity, dailyInsight } from "@/db/schema";
+import { fetchRecovery, fetchCycles, fetchSleep } from "@/lib/whoop";
+import { getWhoopAccessToken } from "@/lib/whoop-tokens";
 import { generateDailyInsight } from "@/lib/insights";
 import { sql, desc } from "drizzle-orm";
+
+export const maxDuration = 60;
 
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
@@ -11,41 +14,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const db = getDb();
-
-  // Get tokens from DB
-  const stored = await db.select().from(whoopTokens).orderBy(desc(whoopTokens.updatedAt)).limit(1);
-  if (stored.length === 0) {
-    return NextResponse.json({ error: "No WHOOP tokens. Auth via dashboard first." }, { status: 400 });
-  }
-
   let accessToken: string;
-  const t = stored[0];
-
-  if (t.expiresAt > new Date()) {
-    accessToken = t.accessToken;
-  } else {
-    const tokens = await refreshWhoopToken(t.refreshToken);
-    accessToken = tokens.access_token;
-    await db
-      .insert(whoopTokens)
-      .values({
-        id: 1,
-        accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token,
-        expiresAt: new Date(tokens.expires_at),
-      })
-      .onConflictDoUpdate({
-        target: whoopTokens.id,
-        set: {
-          accessToken: sql`excluded.access_token`,
-          refreshToken: sql`excluded.refresh_token`,
-          expiresAt: sql`excluded.expires_at`,
-          updatedAt: sql`now()`,
-        },
-      });
+  try {
+    accessToken = await getWhoopAccessToken();
+  } catch (e) {
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : "Token refresh failed" },
+      { status: 400 }
+    );
   }
 
+  const db = getDb();
   const now = new Date();
   const fiveDaysAgo = new Date(now);
   fiveDaysAgo.setDate(now.getDate() - 5);
@@ -77,12 +56,15 @@ export async function GET(request: NextRequest) {
       })
   );
 
+  const cycleByDate = new Map(
+    cycles.map((c) => [c.start?.split("T")[0] ?? c.created_at.split("T")[0], c])
+  );
+
   for (const rec of recoveries) {
     const date = rec.created_at.split("T")[0];
-    const cycleForDate = cycles.find(
-      (c) => c.created_at.split("T")[0] === date
-    );
+    const cycle = cycleByDate.get(date);
     const sleep = sleepByDate.get(date);
+    const kj = cycle?.score?.kilojoule ?? null;
 
     await db
       .insert(whoopRecovery)
@@ -93,9 +75,9 @@ export async function GET(request: NextRequest) {
         restingHeartRate: rec.score.resting_heart_rate,
         sleepPerformance: sleep?.performance ?? null,
         sleepDurationMs: sleep?.durationMs ?? null,
-        strain: cycleForDate?.score?.strain ?? null,
-        kilojoules: cycleForDate?.score?.kilojoule ?? null,
-        caloriesBurned: cycleForDate?.score?.kilojoule ? Math.round(cycleForDate.score.kilojoule * 0.239) : null,
+        strain: cycle?.score?.strain ?? null,
+        kilojoules: kj,
+        caloriesBurned: kj ? Math.round(kj * 0.239) : null,
       })
       .onConflictDoUpdate({
         target: whoopRecovery.date,

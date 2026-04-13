@@ -1,19 +1,13 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { fetchSleep, refreshWhoopToken } from "@/lib/whoop";
+import { fetchSleep } from "@/lib/whoop";
+import { getWhoopAccessToken } from "@/lib/whoop-tokens";
 
 export async function GET() {
-  const cookieStore = await cookies();
-  let accessToken = cookieStore.get("whoop_access_token")?.value;
-  const refreshToken = cookieStore.get("whoop_refresh_token")?.value;
-
-  if (!accessToken && refreshToken) {
-    const tokens = await refreshWhoopToken(refreshToken);
-    accessToken = tokens.access_token;
-  }
-
-  if (!accessToken) {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  let accessToken: string;
+  try {
+    accessToken = await getWhoopAccessToken();
+  } catch (e) {
+    return NextResponse.json({ error: e instanceof Error ? e.message : "Auth failed" }, { status: 401 });
   }
 
   const now = new Date();

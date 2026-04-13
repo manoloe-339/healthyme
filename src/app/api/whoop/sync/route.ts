@@ -1,74 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { fetchRecovery, fetchCycles, fetchSleep, refreshWhoopToken } from "@/lib/whoop";
+import { fetchRecovery, fetchCycles, fetchSleep } from "@/lib/whoop";
+import { getWhoopAccessToken } from "@/lib/whoop-tokens";
 import { getDb } from "@/db";
-import { whoopRecovery, whoopTokens } from "@/db/schema";
-import { sql, desc } from "drizzle-orm";
-
-async function saveTokensToDb(tokens: { access_token: string; refresh_token: string; expires_at: number }) {
-  const db = getDb();
-  await db
-    .insert(whoopTokens)
-    .values({
-      id: 1,
-      accessToken: tokens.access_token,
-      refreshToken: tokens.refresh_token,
-      expiresAt: new Date(tokens.expires_at),
-    })
-    .onConflictDoUpdate({
-      target: whoopTokens.id,
-      set: {
-        accessToken: sql`excluded.access_token`,
-        refreshToken: sql`excluded.refresh_token`,
-        expiresAt: sql`excluded.expires_at`,
-        updatedAt: sql`now()`,
-      },
-    });
-}
+import { whoopRecovery } from "@/db/schema";
+import { sql } from "drizzle-orm";
 
 export async function POST(request: NextRequest) {
-  const cookieStore = await cookies();
-  let accessToken = cookieStore.get("whoop_access_token")?.value;
-  const refreshToken = cookieStore.get("whoop_refresh_token")?.value;
-
-  if (!accessToken && refreshToken) {
-    const tokens = await refreshWhoopToken(refreshToken);
-    accessToken = tokens.access_token;
-    await saveTokensToDb(tokens);
-    cookieStore.set("whoop_access_token", tokens.access_token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "lax",
-      maxAge: 3600,
-      path: "/",
-    });
-    cookieStore.set("whoop_refresh_token", tokens.refresh_token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 30,
-      path: "/",
-    });
-  }
-
-  // If no cookie tokens, try DB tokens
-  if (!accessToken) {
-    const db = getDb();
-    const stored = await db.select().from(whoopTokens).orderBy(desc(whoopTokens.updatedAt)).limit(1);
-    if (stored.length > 0) {
-      const t = stored[0];
-      if (t.expiresAt > new Date()) {
-        accessToken = t.accessToken;
-      } else {
-        const tokens = await refreshWhoopToken(t.refreshToken);
-        accessToken = tokens.access_token;
-        await saveTokensToDb(tokens);
-      }
-    }
-  }
-
-  if (!accessToken) {
-    return NextResponse.json({ error: "Not authenticated with WHOOP" }, { status: 401 });
+  let accessToken: string;
+  try {
+    accessToken = await getWhoopAccessToken();
+  } catch (e) {
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : "Auth failed" },
+      { status: 401 }
+    );
   }
 
   const now = new Date();
@@ -103,14 +48,18 @@ export async function POST(request: NextRequest) {
       })
   );
 
+  // Index cycles by date
+  const cycleByDate = new Map(
+    cycles.map((c) => [c.start?.split("T")[0] ?? c.created_at.split("T")[0], c])
+  );
+
   const db = getDb();
 
   for (const rec of recoveries) {
     const date = rec.created_at.split("T")[0];
-    const cycleForDate = cycles.find(
-      (c) => c.created_at.split("T")[0] === date
-    );
+    const cycle = cycleByDate.get(date);
     const sleep = sleepByDate.get(date);
+    const kj = cycle?.score?.kilojoule ?? null;
 
     await db
       .insert(whoopRecovery)
@@ -121,9 +70,9 @@ export async function POST(request: NextRequest) {
         restingHeartRate: rec.score.resting_heart_rate,
         sleepPerformance: sleep?.performance ?? null,
         sleepDurationMs: sleep?.durationMs ?? null,
-        strain: cycleForDate?.score?.strain ?? null,
-        kilojoules: cycleForDate?.score?.kilojoule ?? null,
-        caloriesBurned: cycleForDate?.score?.kilojoule ? Math.round(cycleForDate.score.kilojoule * 0.239) : null,
+        strain: cycle?.score?.strain ?? null,
+        kilojoules: kj,
+        caloriesBurned: kj ? Math.round(kj * 0.239) : null,
       })
       .onConflictDoUpdate({
         target: whoopRecovery.date,
