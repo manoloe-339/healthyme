@@ -40,6 +40,7 @@ export interface WhoopSleepData {
 }
 
 export interface WhoopCycleData {
+  score_state: string;
   score: {
     strain: number;
     kilojoule: number;

@@ -59,7 +59,7 @@ export async function GET() {
   // Log all cycles with score_state
   const cycleLog = cycles.map((c) => ({
     date: c.start?.split("T")[0] ?? c.created_at.split("T")[0],
-    score_state: (c as Record<string, unknown>).score_state ?? "unknown",
+    score_state: c.score_state ?? "unknown",
     strain: c.score?.strain ?? null,
     kilojoule: c.score?.kilojoule ?? null,
     calories: c.score?.kilojoule ? Math.round(c.score.kilojoule * 0.239) : null,
