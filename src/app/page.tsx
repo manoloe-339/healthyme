@@ -182,8 +182,26 @@ function ExpandableSection({
       <CardContent className="space-y-3">
         {defaultContent}
         {expanded && (
-          <div className="text-sm leading-relaxed text-zinc-300 whitespace-pre-line pt-2 border-t border-border/50">
-            {children}
+          <div className="text-sm leading-relaxed pt-2 border-t border-border/50">
+            {typeof children === "string" && children.includes("- ") ? (
+              <ul className="space-y-1">
+                {children.split("\n").filter(l => l.trim().startsWith("- ")).map((line, i) => {
+                  const text = line.replace(/^- /, "");
+                  const [topic, rest] = text.split(": ", 2);
+                  return (
+                    <li key={i} className="text-xs text-zinc-400 flex gap-1.5">
+                      <span className="text-zinc-600 shrink-0">•</span>
+                      <span>
+                        <span className="text-zinc-200 font-medium">{topic}</span>
+                        {rest && <span className="text-zinc-400">: {rest}</span>}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <div className="text-zinc-300 whitespace-pre-line">{children}</div>
+            )}
           </div>
         )}
         <button

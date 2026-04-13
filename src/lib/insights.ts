@@ -21,16 +21,20 @@ const insightSchema = z.object({
   detailHeadline: z.string().describe("Exactly 6 words highlighting a key data pattern. Use numerals not words for numbers (e.g. '2.5' not 'two point five'). Do NOT use simple oldest-minus-newest subtraction for weight. Analyze the full 7-day pattern: direction, stalls, reversals. E.g. 'Stalled mid-week then broke through.' or '3 nights under 7 hours. Fix.' or 'Steady drop, no stall. Keep going.'"),
 
   // Full analysis texts (hidden by default, shown on expand)
-  correlationAnalysis: z.string().describe("Full analysis of how macros (protein, carbs, fat, calories) correlate with WHOOP recovery, strain, sleep, and weight changes. Include backward-looking diet impact and forward-looking predictions."),
+  // All analysis fields use bullet format:
+  // - [Topic]: [what happened] → [consequence]
+  // Max 8 bullets per field. Each bullet max 50 characters.
+  // Most important finding first. No paragraphs.
+  correlationAnalysis: z.string().describe("Max 8 bullets, each under 50 chars. Format: '- Topic: finding → consequence'. Cover: nutrition-recovery correlation, under/over-eating impact, protein-recovery link, carb-sleep correlation, data gaps. Most important first."),
   coachSummary: z.string().describe("Two sentences only: what the pattern shows, and one specific action for today. Direct, no hedging."),
-  coachAnalysis: z.string().describe("Full coaching analysis including weight trend, sleep correlation, nutrition impact, milestone tracking, and whether current pace matches the protocol."),
+  coachAnalysis: z.string().describe("Max 8 bullets, each under 50 chars. Format: '- Topic: finding → consequence'. Cover: pace vs milestone, weight trend, sleep debt, nutrition compliance, protocol adherence, biggest risk. Most important first."),
   workoutPrescription: z.string().describe("One bold line: activity type and intensity. E.g. 'Rowing — steady state 30 min at 2:10 split' or 'Gym — heavy compounds, 4x5 at RPE 8'"),
-  workoutRationale: z.string().describe("Full reasoning for the workout prescription based on recovery, sleep, strain, nutrition, and where we are in the training split."),
+  workoutRationale: z.string().describe("Max 8 bullets, each under 50 chars. Format: '- Topic: finding → consequence'. Cover: recovery score basis, sleep impact, strain history, nutrition fuel status, what to push/hold back. Most important first."),
 
   // Legacy fields for DB storage
-  weightTrend: z.string().describe("Description of weight trend over the window"),
-  sleepCorrelation: z.string().describe("How sleep performance and duration correlate with weight changes"),
-  insightText: z.string().describe("Full natural-language daily insight paragraph"),
+  weightTrend: z.string().describe("Max 4 bullets, each under 50 chars. Format: '- Topic: finding → consequence'. Weight direction, stall detection, pace vs milestone."),
+  sleepCorrelation: z.string().describe("Max 4 bullets, each under 50 chars. Format: '- Topic: finding → consequence'. Sleep-weight link, sleep-recovery link, duration trends."),
+  insightText: z.string().describe("Max 8 bullets, each under 50 chars. Format: '- Topic: finding → consequence'. Full daily summary covering all data sources. Most important first."),
 });
 
 export type Insight = z.infer<typeof insightSchema>;
