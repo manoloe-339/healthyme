@@ -4,20 +4,20 @@ import { z } from "zod";
 import userContext from "./user-context.json";
 
 const insightSchema = z.object({
-  // Today's Orders — each line MUST be 38 characters or fewer. No exceptions.
-  orderStatus: z.string().max(38).describe("Max 38 chars: overall status. E.g. 'On track. Don't get complacent.'"),
-  orderEat: z.string().max(38).describe("Max 38 chars: what to eat today. E.g. 'Hit 130g protein. Add tuna.'"),
-  orderDrink: z.string().max(38).describe("Max 38 chars: hydration. E.g. 'LMNT morning. Water all day steady.'"),
-  orderExercise: z.string().max(38).describe("Max 38 chars: exercise. E.g. 'Row easy 30 min. Recovery day.'"),
-  orderSleep: z.string().max(38).describe("Max 38 chars: sleep. E.g. 'Bed by 10:30. 7.5 hours minimum.'"),
-  orderWatch: z.string().max(38).describe("Max 38 chars: watch out. E.g. 'Log gaps killing data quality.'"),
+  // Today's Orders — keep each line short and punchy, under 40 chars ideal
+  orderStatus: z.string().describe("Short overall status. E.g. 'On track. Don't get complacent.'"),
+  orderEat: z.string().describe("Short eat order. E.g. 'Hit 130g protein. Add tuna.'"),
+  orderDrink: z.string().describe("Short hydration. E.g. 'LMNT morning. Water all day.'"),
+  orderExercise: z.string().describe("Short exercise. E.g. 'Row easy 30 min. Recovery day.'"),
+  orderSleep: z.string().describe("Short sleep. E.g. 'Bed by 10:30. 7.5 hours minimum.'"),
+  orderWatch: z.string().describe("Short warning. E.g. 'Log gaps killing data quality.'"),
 
   // Six-word headline summaries for each dashboard section
   correlationHeadline: z.string().describe("Exactly 6 words summarizing the key nutrition-recovery correlation pattern. E.g. 'Carbs up, recovery follows. Every time.' or 'Low protein tanking your recovery scores.'"),
   statusHeadline: z.string().describe("Exactly 6 words summarizing current status across recovery/sleep/pace. E.g. 'Recovery yellow. Sleep ok. Pace ahead.' or 'Red recovery. Sleep tanked. Off pace.'"),
   coachHeadline: z.string().describe("Exactly 6 words — the single most important coaching message. E.g. 'Under-fueling is killing your recovery score.' or 'Sleep debt erasing your calorie deficit.'"),
   workoutHeadline: z.string().describe("Exactly 6 words for today's workout prescription. E.g. '58% recovery. Row easy, not hard.' or 'Green light. Push the heavy compounds.'"),
-  deficitHeadline: z.string().max(38).describe("Max 38 chars: key insight about calorie deficit pattern. E.g. '3200 deficit this week. On track.' or 'Under-eating. Raise to 1500 minimum.'"),
+  deficitHeadline: z.string().describe("Short deficit insight. E.g. '3200 deficit this week. On track.' or 'Under-eating. Raise to 1500 minimum.'"),
   detailHeadline: z.string().describe("Exactly 6 words highlighting a key data pattern. Use numerals not words for numbers (e.g. '2.5' not 'two point five'). Do NOT use simple oldest-minus-newest subtraction for weight. Analyze the full 7-day pattern: direction, stalls, reversals. E.g. 'Stalled mid-week then broke through.' or '3 nights under 7 hours. Fix.' or 'Steady drop, no stall. Keep going.'"),
 
   // Full analysis texts (hidden by default, shown on expand)
