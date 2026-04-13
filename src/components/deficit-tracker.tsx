@@ -118,7 +118,7 @@ export function DeficitTracker({ recovery, nutrition }: Props) {
       <p className="text-xs text-zinc-500">{insightLine}</p>
 
       {/* Chart */}
-      <ResponsiveContainer width="100%" height={200}>
+      <ResponsiveContainer width="100%" height={170}>
         <BarChart data={days} barGap={2}>
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
           <XAxis dataKey="dateShort" tick={{ fill: "#71717a", fontSize: 10 }} axisLine={{ stroke: "rgba(255,255,255,0.06)" }} />

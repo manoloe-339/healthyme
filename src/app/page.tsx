@@ -446,9 +446,9 @@ export default function Dashboard() {
         headline={insight?.statusHeadline ?? "Sync WHOOP to see current status."}
         expandLabel="Full Detail"
         defaultContent={
-          <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+          <div className="grid grid-cols-3 gap-1">
             {/* Recovery */}
-            <div className={`rounded-lg border px-2 sm:px-3 py-2 text-center relative group cursor-default ${latestRecovery ? statusColor(latestRecovery.recoveryScore, 70, 50) : "bg-zinc-900 border-zinc-800 text-zinc-500"}`}>
+            <div className={`rounded-lg border px-1.5 py-1.5 text-center relative group cursor-default ${latestRecovery ? statusColor(latestRecovery.recoveryScore, 70, 50) : "bg-zinc-900 border-zinc-800 text-zinc-500"}`}>
               <p className="text-xl sm:text-2xl font-mono font-bold">{latestRecovery?.recoveryScore ?? "—"}%</p>
               <p className="text-[9px] sm:text-[10px] uppercase tracking-wider mt-0.5">Recovery</p>
               {latestRecovery && (
@@ -471,7 +471,7 @@ export default function Dashboard() {
               )}
             </div>
             {/* Sleep */}
-            <div className={`rounded-lg border px-2 sm:px-3 py-2 text-center relative group cursor-default ${latestRecovery?.sleepPerformance ? statusColor(latestRecovery.sleepPerformance, 75, 65) : "bg-zinc-900 border-zinc-800 text-zinc-500"}`}>
+            <div className={`rounded-lg border px-1.5 py-1.5 text-center relative group cursor-default ${latestRecovery?.sleepPerformance ? statusColor(latestRecovery.sleepPerformance, 75, 65) : "bg-zinc-900 border-zinc-800 text-zinc-500"}`}>
               <p className="text-xl sm:text-2xl font-mono font-bold">{latestRecovery?.sleepPerformance?.toFixed(0) ?? "—"}%</p>
               <p className="text-[9px] sm:text-[10px] uppercase tracking-wider mt-0.5">Sleep</p>
               {latestRecovery && (
@@ -490,7 +490,7 @@ export default function Dashboard() {
               )}
             </div>
             {/* Weight */}
-            <div className={`rounded-lg border px-2 sm:px-3 py-2 text-center relative group cursor-default ${currentLbs ? statusColor(currentLbs <= 209 ? 100 : currentLbs <= 215 ? 60 : 30, 70, 50) : "bg-zinc-900 border-zinc-800 text-zinc-500"}`}>
+            <div className={`rounded-lg border px-1.5 py-1.5 text-center relative group cursor-default ${currentLbs ? statusColor(currentLbs <= 209 ? 100 : currentLbs <= 215 ? 60 : 30, 70, 50) : "bg-zinc-900 border-zinc-800 text-zinc-500"}`}>
               <p className="text-xl sm:text-2xl font-mono font-bold">{currentLbs?.toFixed(1) ?? "—"}</p>
               <p className="text-[9px] sm:text-[10px] uppercase tracking-wider mt-0.5">Weight</p>
               {latestWeight && (

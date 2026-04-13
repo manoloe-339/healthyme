@@ -142,4 +142,20 @@
   html {
     @apply font-sans;
   }
+
+  /* Mobile card tightening */
+  @media (max-width: 640px) {
+    [data-slot="card"] {
+      padding: 0.5rem;
+    }
+    [data-slot="card-header"] {
+      padding: 0.5rem 0.5rem 0.25rem;
+    }
+    [data-slot="card-content"] {
+      padding: 0 0.5rem 0.5rem;
+    }
+  }
+  html {
+    @apply font-sans;
+  }
 }

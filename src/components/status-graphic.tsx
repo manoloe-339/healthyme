@@ -154,7 +154,7 @@ export function StatusGraphic({ weights, nutritionDates = [], todayProtein = nul
 
       {/* Arc + Weight — unified */}
       <div className="flex flex-col items-center">
-        <svg width="300" height="160" viewBox="0 0 300 160" className="w-full max-w-[320px]">
+        <svg width="300" height="160" viewBox="0 0 300 160" className="w-full max-w-[280px]">
           {/* Background arc */}
           <path
             d={`M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}`}
@@ -203,7 +203,7 @@ export function StatusGraphic({ weights, nutritionDates = [], todayProtein = nul
 
       {/* Trend Tiles */}
       {trends && (
-        <div className="grid grid-cols-4 gap-1.5 mt-3">
+        <div className="grid grid-cols-4 gap-1 mt-2">
           {([
             { data: trends.lost7, label: "7d" },
             { data: trends.lost30, label: "30d" },
@@ -212,7 +212,7 @@ export function StatusGraphic({ weights, nutritionDates = [], todayProtein = nul
           ] as const).map(({ data, label }) => (
             <div
               key={label}
-              className={`rounded-lg border px-1 py-2 text-center relative group cursor-default ${TILE_COLORS[data.status]}`}
+              className={`rounded border px-0.5 py-1.5 text-center relative group cursor-default ${TILE_COLORS[data.status]}`}
             >
               <p className="text-xl sm:text-2xl font-mono font-bold">{data.value?.toFixed(1) ?? "—"}</p>
               <p className="text-[8px] uppercase tracking-wider mt-0.5">{label}</p>
