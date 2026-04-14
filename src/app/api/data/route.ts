@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
 
   const db = getDb();
 
-  const [recovery, weight, allWeight, insights, nutrition, activity, lastWeightSync, lastWhoopSync] = await Promise.all([
+  const [recovery, weight, allWeight, insights, nutrition, activity, lastWeightSync, lastWhoopSync, lastNutritionSync] = await Promise.all([
     db.select().from(whoopRecovery).orderBy(desc(whoopRecovery.date)).limit(limit),
     db.select().from(weightLog).orderBy(desc(weightLog.date)).limit(limit),
     db.select({ date: weightLog.date, weightKg: weightLog.weightKg }).from(weightLog).orderBy(desc(weightLog.date)).limit(120),
@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
     db.select().from(dailyActivity).orderBy(desc(dailyActivity.date)).limit(limit),
     db.select({ createdAt: weightLog.createdAt }).from(weightLog).orderBy(desc(weightLog.createdAt)).limit(1),
     db.select({ createdAt: whoopRecovery.createdAt }).from(whoopRecovery).orderBy(desc(whoopRecovery.createdAt)).limit(1),
+    db.select({ date: dailyNutrition.date, createdAt: dailyNutrition.createdAt }).from(dailyNutrition).orderBy(desc(dailyNutrition.createdAt)).limit(1),
   ]);
 
   // Only include nutrition days that have real logged data (calories > 0)
@@ -47,6 +48,8 @@ export async function GET(request: NextRequest) {
     lastSync: {
       autoExport: lastWeightSync[0]?.createdAt ?? null,
       whoop: lastWhoopSync[0]?.createdAt ?? null,
+      nutrition: lastNutritionSync[0]?.createdAt ?? null,
+      nutritionDate: lastNutritionSync[0]?.date ?? null,
     },
   });
 }

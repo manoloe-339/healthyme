@@ -96,7 +96,7 @@ interface DashboardData {
   activity: ActivityEntry[];
   correlations: Correlations;
   latestInsight: Insight | null;
-  lastSync: { autoExport: string | null; whoop: string | null };
+  lastSync: { autoExport: string | null; whoop: string | null; nutrition: string | null; nutritionDate: string | null };
 }
 
 // --- Helpers ---
@@ -316,9 +316,9 @@ export default function Dashboard() {
           {data?.lastSync && (
             <p className="text-[10px] sm:text-xs text-zinc-600 mt-0.5 truncate">
               Export: {timeAgo(data.lastSync.autoExport)} · WHOOP: {timeAgo(data.lastSync.whoop)}
-              {data.nutrition && data.nutrition.length > 0 && (
+              {data.lastSync.nutritionDate && data.lastSync.nutrition && (
                 <> · <a href="/debug" className="hover:text-zinc-400 underline decoration-zinc-700">
-                  Last meal log: {formatDate([...data.nutrition].sort((a, b) => b.date.localeCompare(a.date))[0].date)}
+                  Last meal log: {formatDate(data.lastSync.nutritionDate)} (synced {timeAgo(data.lastSync.nutrition)})
                 </a></>
               )}
             </p>
