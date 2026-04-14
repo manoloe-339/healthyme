@@ -317,8 +317,8 @@ export default function Dashboard() {
             <p className="text-[10px] sm:text-xs text-zinc-600 mt-0.5 truncate">
               Export: {timeAgo(data.lastSync.autoExport)} · WHOOP: {timeAgo(data.lastSync.whoop)}
               {data.nutrition && data.nutrition.length > 0 && (
-                <> · <a href="/debug" className="hover:text-zinc-400 underline decoration-zinc-700">Last log: {formatDate([...data.nutrition].sort((a, b) => b.date.localeCompare(a.date))[0].date)}
-                  {data.lastSync.autoExport && ` at ${new Date(data.lastSync.autoExport).toLocaleTimeString("en-US", { timeZone: "America/Los_Angeles", hour: "numeric", minute: "2-digit" })}`}
+                <> · <a href="/debug" className="hover:text-zinc-400 underline decoration-zinc-700">
+                  Last meal log: {formatDate([...data.nutrition].sort((a, b) => b.date.localeCompare(a.date))[0].date)}
                 </a></>
               )}
             </p>
