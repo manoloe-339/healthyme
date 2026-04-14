@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     db.select().from(dailyInsight).orderBy(desc(dailyInsight.date)).limit(1),
     db.select().from(dailyNutrition).orderBy(desc(dailyNutrition.date)).limit(limit),
     db.select().from(dailyActivity).orderBy(desc(dailyActivity.date)).limit(limit),
-    db.select({ createdAt: weightLog.createdAt }).from(weightLog).orderBy(desc(weightLog.createdAt)).limit(1),
+    db.select({ createdAt: weightLog.createdAt, date: weightLog.date }).from(weightLog).orderBy(desc(weightLog.createdAt)).limit(1),
     db.select({ createdAt: whoopRecovery.createdAt }).from(whoopRecovery).orderBy(desc(whoopRecovery.createdAt)).limit(1),
     db.select({ date: dailyNutrition.date, createdAt: dailyNutrition.createdAt }).from(dailyNutrition).orderBy(desc(dailyNutrition.createdAt)).limit(1),
   ]);
@@ -50,6 +50,8 @@ export async function GET(request: NextRequest) {
       whoop: lastWhoopSync[0]?.createdAt ?? null,
       nutrition: lastNutritionSync[0]?.createdAt ?? null,
       nutritionDate: lastNutritionSync[0]?.date ?? null,
+      weight: lastWeightSync[0]?.createdAt ?? null,
+      weightDate: lastWeightSync[0]?.date ?? null,
     },
   });
 }

@@ -96,13 +96,28 @@ interface DashboardData {
   activity: ActivityEntry[];
   correlations: Correlations;
   latestInsight: Insight | null;
-  lastSync: { autoExport: string | null; whoop: string | null; nutrition: string | null; nutritionDate: string | null };
+  lastSync: { autoExport: string | null; whoop: string | null; nutrition: string | null; nutritionDate: string | null; weight: string | null; weightDate: string | null };
 }
 
 // --- Helpers ---
 
 function kgToLbs(kg: number): number {
   return kg * 2.20462;
+}
+
+function dateTimePT(isoDate: string, syncIso: string | null): string {
+  const dateStr = new Date(isoDate + "T12:00:00").toLocaleDateString("en-US", {
+    timeZone: "America/Los_Angeles",
+    month: "short",
+    day: "numeric",
+  });
+  if (!syncIso) return dateStr;
+  const timeStr = new Date(syncIso).toLocaleTimeString("en-US", {
+    timeZone: "America/Los_Angeles",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  return `${dateStr}, ${timeStr} PT`;
 }
 
 function timeAgo(dateStr: string | null): string {
@@ -314,12 +329,15 @@ export default function Dashboard() {
         <div className="min-w-0">
           <h1 className="text-lg sm:text-xl font-bold tracking-tight text-white">healthyme</h1>
           {data?.lastSync && (
-            <p className="text-[10px] sm:text-xs text-zinc-600 mt-0.5 truncate">
-              Export: {timeAgo(data.lastSync.autoExport)} · WHOOP: {timeAgo(data.lastSync.whoop)}
-              {data.lastSync.nutritionDate && data.lastSync.nutrition && (
+            <p className="text-[10px] sm:text-xs text-zinc-600 mt-0.5">
+              WHOOP: {timeAgo(data.lastSync.whoop)}
+              {data.lastSync.nutritionDate && (
                 <> · <a href="/debug" className="hover:text-zinc-400 underline decoration-zinc-700">
-                  Last meal log: {formatDate(data.lastSync.nutritionDate)} (synced {timeAgo(data.lastSync.nutrition)})
+                  Nutrition: {dateTimePT(data.lastSync.nutritionDate, data.lastSync.nutrition)}
                 </a></>
+              )}
+              {data.lastSync.weightDate && (
+                <> · Weight: {dateTimePT(data.lastSync.weightDate, data.lastSync.weight)}</>
               )}
             </p>
           )}
