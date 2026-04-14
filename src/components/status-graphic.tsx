@@ -208,7 +208,7 @@ export function StatusGraphic({ weights, nutritionDates = [], todayProtein = nul
             { data: trends.lost7, label: "7d" },
             { data: trends.lost30, label: "30d" },
             { data: trends.lost90, label: "90d" },
-            { data: { ...trends.sinceBaseline, actualDays: undefined, startDate: "2026-02-11" }, label: "Feb 11" },
+            { data: { ...trends.sinceBaseline, actualDays: trends.sinceBaseline.endDate ? Math.round((new Date(trends.sinceBaseline.endDate).getTime() - new Date("2026-02-11").getTime()) / 86400000) : undefined, startDate: "2026-02-11" }, label: "Feb 11" },
           ] as const).map(({ data, label }) => (
             <div
               key={label}
@@ -220,11 +220,11 @@ export function StatusGraphic({ weights, nutritionDates = [], todayProtein = nul
               {data.startWeight && (
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-20">
                   <div className="bg-zinc-900/95 backdrop-blur-sm border border-zinc-700 rounded-lg px-3 py-2 text-[10px] whitespace-nowrap space-y-0.5">
-                    {data.startDate && (
+                    {data.startDate && data.endDate && (
                       <p className="text-zinc-500">
                         {new Date(data.startDate + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                         {" → "}
-                        {new Date(today + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                        {new Date(data.endDate + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                       </p>
                     )}
                     <p className="text-zinc-300">{data.startWeight.toFixed(1)} → {data.endWeight?.toFixed(1)} lbs</p>
