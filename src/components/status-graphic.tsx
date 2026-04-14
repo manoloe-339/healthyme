@@ -221,7 +221,11 @@ export function StatusGraphic({ weights, nutritionDates = [], todayProtein = nul
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-20">
                   <div className="bg-zinc-900/95 backdrop-blur-sm border border-zinc-700 rounded-lg px-3 py-2 text-[10px] whitespace-nowrap space-y-0.5">
                     {data.startDate && (
-                      <p className="text-zinc-500">{new Date(data.startDate + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })} → today</p>
+                      <p className="text-zinc-500">
+                        {new Date(data.startDate + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                        {" → "}
+                        {new Date(today + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      </p>
                     )}
                     <p className="text-zinc-300">{data.startWeight.toFixed(1)} → {data.endWeight?.toFixed(1)} lbs</p>
                     {data.actualDays && <p className="text-zinc-500">{data.actualDays} days</p>}
